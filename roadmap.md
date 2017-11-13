@@ -1,4 +1,4 @@
-#Roadmap
+# Roadmap
 
 ## 0.1
 * [ ] Detect running game with unique name
@@ -23,20 +23,20 @@
 
 ## 0.6
 * [ ] Allow clients to request informations
- * [ ] Current running game
- * [ ] Accumulated time a game was running
- * [ ] Last time a game got played
+  * [ ] Current running game
+  * [ ] Accumulated time a game was running
+  * [ ] Last time a game got played
 * [ ] Implement primitive cli client
 
 ## 0.7
 * [ ] Improve communicability of games (at example FTL: Faster Than Light)
- * [ ] Steam ID (212680)
- * [ ] Amazon ID (B00D7GNPO2)
- * [ ] Lutris handle (ftl-faster-than-light)
- * [ ] Humble bundle handle (ftl-faster-than-light)
- * [ ] GOG handle (faster_than_light)
- * [ ] pcgamingwiki handle (FTL:_Faster_Than_Light)
- * [ ] holarse-linuxgaming handle (ftl)
+  * [ ] Steam ID (212680)
+  * [ ] Amazon ID (B00D7GNPO2)
+  * [ ] Lutris handle (ftl-faster-than-light)
+  * [ ] Humble bundle handle (ftl-faster-than-light)
+  * [ ] GOG handle (faster_than_light)
+  * [ ] pcgamingwiki handle (FTL:_Faster_Than_Light)
+  * [ ] holarse-linuxgaming handle (ftl)
  
 ## 0.8
 * [ ] Support for Windows and Mac

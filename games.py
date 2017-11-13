@@ -49,7 +49,7 @@ trackedGames = {
 }
 
 found = {'pid': -1, 'name': '', 'started': 0}
-binaryExtension = '(.(exe|run|bin(.x86(_64)?)?|x86(_64)?))?';
+binaryExtension = '(.(exe|run|elf|bin|x86(_64)?|(amd|x)64))*';
 
 
 def note(head, msg):

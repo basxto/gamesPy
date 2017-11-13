@@ -1,9 +1,9 @@
 # Roadmap
 
 ## 0.1
-* [ ] Detect running game with unique name
+* [x] Detect running game with unique name
 * [ ] Detect running game with non-unique name and unique argument
-* [ ] Notify user about detected game
+* [x] Notify user about detected game
 
 ## 0.2
 * [ ] Print played time

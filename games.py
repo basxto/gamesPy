@@ -1,7 +1,11 @@
-#!/usr/bin/python3 
+#!/usr/bin/python3
+#regex
+import re;
+#track processes
 import psutil;
 import time;
 import datetime;
+#linux notifications
 import notify2;
 notify2.init('gamesPy');
 print('Listening for newly started games...');
@@ -24,10 +28,10 @@ trackedGames = {
         {'name': 'python2', 'argument': 'ardentryst.py'},
     )},
     'Shattered Pixel Dungeon': {'processes': (
-        {'name': 'java'},# 'argument': 'shattered-pixel-dungeon.jar'},
+        {'name': 'java', 'argument': 'shattered-pixel-dungeon.jar'},
     )},
     'Zelda Mystery of Solarus DX': {'processes': (
-        {'name': 'solarus-run'},#, 'argument': 'zsdx'},
+        {'name': 'solarus-run', 'argument': 'zsdx'},
     )},
     'Zelda Mystery of Solarus XD': {'processes': (
         {'name': 'solarus-run', 'argument': 'zsxd'},
@@ -38,9 +42,15 @@ trackedGames = {
     'Antichamber': {'processes': (
         {'name': 'UDKGame-Linux', 'steamAppId': '219890'},
     )},
+    #.exe
+    'System Shock 2 Alt': {'processes': (
+        {'name': 'Shock2'},
+    )},
 }
 
 found = {'pid': -1, 'name': '', 'started': 0}
+binaryExtension = '(.(exe|run|bin(.x86(_64)?)?|x86(_64)?))?';
+
 
 def note(head, msg):
     notify2.Notification(head, msg).show();
@@ -57,7 +67,9 @@ def track():
                 else:
                     for name, game in trackedGames.items():
                         for trackedProcess in game['processes']:
-                            if pinfo['name'] == trackedProcess['name'] and ( ('argument' not in trackedProcess) or (trackedProcess['argument'] in pinfo['cmdline'])):
+                            #check if name is the same
+                            #if set also check argument
+                            if re.match('.*' + trackedProcess['name'] + binaryExtension, pinfo['name'])  and ( ('argument' not in trackedProcess) or (trackedProcess['argument'] in pinfo['cmdline'])):
                                 found['pid'] = pinfo['pid'];
                                 found['name'] = name;
                                 found['startedu'] = pinfo['create_time'];
@@ -75,9 +87,6 @@ def track():
                     note(found['name'] + " closed", 'Ended {end}'.format(end=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")));
                     found['pid'] = -1;
                 else:
-                    for con in p.connections():
-                        if con.status == psutil.CONN_ESTABLISHED:
-                            print(con);
                     try:
                         #wait for process to exit or 5 seconds
                         p.wait(5);

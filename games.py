@@ -7,7 +7,8 @@ import re;
 import psutil;
 import time;
 import datetime;
-import configparser
+import configparser;
+import sqlite3;
 if sys.platform.startswith('linux'):
     #notifications
     import notify2;
@@ -54,21 +55,7 @@ class Session:
     def getDuration(self):
         return self.end-self.start;
 
-trackedGames = [
-    Game('SuperTux 2', 'supertux2'),
-    Game('MegaGlest', 'megaglest'),
-    Game('Xonotic', 'xonotic-(glx|sdl)'),
-    Game('Beneath a Steel Sky', 'scummvm', 'sky'),
-    Game('Ardentryst', 'python2', 'ardentryst.py'),
-    Game('Shattered Pixel Dungeon', 'java', 'shattered-pixel-dungeon.jar'),
-    Game('Zelda Mystery of Solarus DX', 'solarus-run', 'zsdx'),
-    Game('Zelda Mystery of Solarus XD', 'solarus-run', 'zsxd'),
-    Game('Stealth Bastard Deluxe', 'runner'),
-    Game('Antichamber', 'UDKGame-Linux'),
-    Game('System Shock 2', 'Shock2')
-];
-
-sessions = [];
+trackedGames = [];
 
 found = {'pid': -1, 'game': '', 'started': 0}
 binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?$';
@@ -79,7 +66,17 @@ def note(head, msg):
         notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
+def readGames():
+    cur = conn.cursor();
+    cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
+    for row in cur:
+        trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
+
 def track():
+    if not trackedGames:
+        print('Empty game list...');
+        return
+    print('{} games are known'.format(len(trackedGames)));
     print('Listening for newly started games...');
     try:
         while 1:
@@ -125,16 +122,25 @@ def track():
         print('Stopped listening for newly started games...');
 
 def main():
-    config = configparser.ConfigParser();
     # default is current directory
     configdir = ''
+    datadir = ''
     if sys.platform.startswith('linux'):
         configdir = xdg_config_home + '/gamesPy/'
+        datadir = xdg_data_home + '/gamesPy/'
+    # default configurations
+    config = configparser.ConfigParser();
+    config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
+    # read and writeback configurations, writes defaults if not set
     config.read(configdir + 'gamesPy.ini')
     if configdir and not os.path.exists(configdir):
         os.makedirs(configdir)
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
+    global conn
+    conn = sqlite3.connect(config['DATABASE']['path'])
+    conn.row_factory = sqlite3.Row;
+    readGames();
     track();
     print('Good bye');
 

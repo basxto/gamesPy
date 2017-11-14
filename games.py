@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os;
+import sys;
 #regex
 import re;
 #track processes
@@ -7,11 +8,12 @@ import psutil;
 import time;
 import datetime;
 import configparser
-#linux notifications
-import notify2;
-notify2.init('gamesPy');
-#follow XDG standard on Linux
-from xdg.BaseDirectory import xdg_config_home, xdg_data_home
+if sys.platform.startswith('linux'):
+    #notifications
+    import notify2;
+    notify2.init('gamesPy');
+    #follow XDG standard
+    from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
     sessions = [];
@@ -73,7 +75,8 @@ binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?$';
 
 
 def note(head, msg):
-    notify2.Notification(head, msg).show();
+    if sys.platform.startswith('linux'):
+        notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
 def track():
@@ -123,11 +126,14 @@ def track():
 
 def main():
     config = configparser.ConfigParser();
-    configdir = xdg_config_home + '/gamesPy/'
-    config.read(configdir + '/gamesPy.ini')
-    if not os.path.exists(configdir):
+    # default is current directory
+    configdir = ''
+    if sys.platform.startswith('linux'):
+        configdir = xdg_config_home + '/gamesPy/'
+    config.read(configdir + 'gamesPy.ini')
+    if configdir and not os.path.exists(configdir):
         os.makedirs(configdir)
-    with open(configdir + '/gamesPy.ini', 'w+') as configfile:
+    with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
     track();
     print('Good bye');

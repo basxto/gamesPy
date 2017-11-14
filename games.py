@@ -49,19 +49,35 @@ trackedGames = {
 }
 
 found = {'pid': -1, 'name': '', 'started': 0}
-binaryExtension = '(.(exe|run|elf|bin|x86(_64)?|(amd|x)64))*';
+binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
 
 
 def note(head, msg):
     notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
+def isProcess(trackedProcess, pinfo):
+    #check process name
+    name = re.compile(trackedProcess['name'] + binaryExtension);
+    if( not (pinfo['name'] and name.search(pinfo['name']) )
+    and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
+        return False;
+    # No argument is always contained
+    if 'argument' not in trackedProcess:
+        return True;
+    #compare argument with every cmdline argument
+    argument = re.compile(trackedProcess['argument']);
+    if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
+        return True;
+    else:
+        return False;
+
 def track():
     try:
         while 1:
             for proc in psutil.process_iter():
                 try:
-                    pinfo = proc.as_dict(attrs=['pid', 'name', 'create_time', 'cwd', 'cmdline', 'environ'])
+                    pinfo = proc.as_dict(attrs=['pid', 'name', 'exe', 'create_time', 'cwd', 'cmdline', 'environ'])
                 except psutil.NoSuchProcess:
                     pass
                 else:
@@ -69,7 +85,7 @@ def track():
                         for trackedProcess in game['processes']:
                             #check if name is the same
                             #if set also check argument
-                            if re.match('.*' + trackedProcess['name'] + binaryExtension, pinfo['name'])  and ( ('argument' not in trackedProcess) or (trackedProcess['argument'] in pinfo['cmdline'])):
+                            if isProcess(trackedProcess, pinfo):
                                 found['pid'] = pinfo['pid'];
                                 found['name'] = name;
                                 found['startedu'] = pinfo['create_time'];
@@ -79,6 +95,7 @@ def track():
                             break
                     if found['pid'] != -1:
                         break;
+            #wait for running process
             while found['pid'] != -1:
                 try:
                     p = psutil.Process(found['pid']);

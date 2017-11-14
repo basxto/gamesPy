@@ -2,7 +2,7 @@
 
 ## 0.1
 * [x] Detect running game with unique name
-* [ ] Detect running game with non-unique name and unique argument
+* [x] Detect running game with non-unique name and unique argument
 * [x] Notify user about detected game
 
 ## 0.2

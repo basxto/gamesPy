@@ -49,7 +49,7 @@ trackedGames = {
 }
 
 found = {'pid': -1, 'name': '', 'started': 0}
-binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
+binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?$';
 
 
 def note(head, msg):
@@ -66,7 +66,7 @@ def isProcess(trackedProcess, pinfo):
     if 'argument' not in trackedProcess:
         return True;
     #compare argument with every cmdline argument
-    argument = re.compile(trackedProcess['argument']);
+    argument = re.compile(trackedProcess['argument'] + '$');
     if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
         return True;
     else:

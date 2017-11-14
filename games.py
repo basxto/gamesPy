@@ -1,14 +1,17 @@
 #!/usr/bin/python3
+import os;
 #regex
 import re;
 #track processes
 import psutil;
 import time;
 import datetime;
+import configparser
 #linux notifications
 import notify2;
 notify2.init('gamesPy');
-print('Listening for newly started games...');
+#follow XDG standard on Linux
+from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
     sessions = [];
@@ -74,6 +77,7 @@ def note(head, msg):
     print(head + ":\n  " + msg);
 
 def track():
+    print('Listening for newly started games...');
     try:
         while 1:
             for proc in psutil.process_iter():
@@ -116,6 +120,16 @@ def track():
             time.sleep(10);
     except KeyboardInterrupt:
         print('Stopped listening for newly started games...');
-        print('Good bye');
 
-track();
+def main():
+    config = configparser.ConfigParser();
+    configdir = xdg_config_home + '/gamesPy/'
+    config.read(configdir + '/gamesPy.ini')
+    if not os.path.exists(configdir):
+        os.makedirs(configdir)
+    with open(configdir + '/gamesPy.ini', 'w+') as configfile:
+        config.write(configfile)
+    track();
+    print('Good bye');
+
+main();

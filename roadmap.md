@@ -7,7 +7,7 @@
 
 ## 0.2
 * [x] Print played time
-* [ ] Represent games and sessions with classes
+* [x] Represent games and sessions with classes
 * [ ] Store and accumulate played time temporarily
 
 ## 0.3

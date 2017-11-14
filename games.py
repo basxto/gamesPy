@@ -11,6 +11,7 @@ notify2.init('gamesPy');
 print('Listening for newly started games...');
 
 class Game:
+    sessions = [];
     def __init__(self, name, process, argument=''):
         self.name = name;
         self.process = process;
@@ -30,12 +31,23 @@ class Game:
             return True;
         else:
             return False;
+    def addSession(self, session):
+        self.sessions.append(session);
+    #Returns time delta
+    def getPlaytime(self):
+        timeAccu = datetime.timedelta();
+        for session in self.sessions:
+            timeAccu += session.getDuration();
+        return timeAccu;
 
 class Session:
     def __init__(self, game, start, end):
         self.game = game;
         self.start = start;
         self.end = end;
+    #returns a time delta
+    def getDuration(self):
+        return self.end-self.start;
 
 trackedGames = [
     Game('SuperTux 2', 'supertux2'),
@@ -89,9 +101,11 @@ def track():
                     p = psutil.Process(found['pid']);
                     pinfo = p.as_dict(attrs=['pid', 'name', 'create_time', 'cwd', 'cmdline', 'environ'])
                 except psutil.NoSuchProcess:
-                    note(found['game'].name + " closed", 'Ended {end}'.format(end=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")));
-                    delta=(datetime.datetime.now() - datetime.datetime.fromtimestamp(pinfo['create_time']))
-                    print('This session took {0}h {1}min {2}sec'.format(round((delta.seconds/3600)%24),round((delta.seconds/60)%60),delta.seconds%60));
+                    tmpSession = Session(found['game'], datetime.datetime.fromtimestamp(pinfo['create_time']), datetime.datetime.now());
+                    note(found['game'].name + " closed", 'Ended {end}'.format(end=tmpSession.start.strftime("%Y-%m-%d %H:%M:%S")));
+                    print('This session took {0}h {1}min {2}sec'.format(round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
+                    found['game'].addSession(tmpSession);
+                    print('You played this game {0}h {1}min {2}sec in total'.format(round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
                     found['pid'] = -1;
                 else:
                     try:

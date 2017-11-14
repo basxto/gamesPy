@@ -8,7 +8,7 @@
 ## 0.2
 * [x] Print played time
 * [x] Represent games and sessions with classes
-* [ ] Store and accumulate played time temporarily
+* [x] Store and accumulate played time temporarily
 
 ## 0.3
 * [ ] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database

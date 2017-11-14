@@ -6,7 +6,8 @@
 * [x] Notify user about detected game
 
 ## 0.2
-* [ ] Print played time
+* [x] Print played time
+* [ ] Represent games and sessions with classes
 * [ ] Store and accumulate played time temporarily
 
 ## 0.3

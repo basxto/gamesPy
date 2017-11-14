@@ -102,6 +102,8 @@ def track():
                     pinfo = p.as_dict(attrs=['pid', 'name', 'create_time', 'cwd', 'cmdline', 'environ'])
                 except psutil.NoSuchProcess:
                     note(found['name'] + " closed", 'Ended {end}'.format(end=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")));
+                    delta=(datetime.datetime.now() - datetime.datetime.fromtimestamp(pinfo['create_time']))
+                    print('This session took {0}h {1}min {2}sec'.format(round((delta.seconds/3600)%24),round((delta.seconds/60)%60),delta.seconds%60);
                     found['pid'] = -1;
                 else:
                     try:

@@ -66,11 +66,39 @@ def note(head, msg):
         notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
+def createDatabase():
+    #compatible to GBM v1.04
+    cur = conn.cursor();
+    cur.execute('''CREATE TABLE IF NOT EXISTS monitorlist (
+                    MonitorID TEXT NOT NULL UNIQUE,
+                    Name TEXT NOT NULL,
+                    Process TEXT NOT NULL,
+                    Path TEXT,
+                    AbsolutePath BOOLEAN NOT NULL,
+                    FolderSave BOOLEAN NOT NULL,
+                    FileType TEXT,
+                    TimeStamp BOOLEAN NOT NULL,
+                    ExcludeList TEXT NOT NULL,
+                    ProcessPath TEXT,
+                    Icon TEXT,
+                    Hours REAL,
+                    Version TEXT,
+                    Company TEXT,
+                    Enabled BOOLEAN NOT NULL,
+                    MonitorOnly BOOLEAN NOT NULL,
+                    BackupLimit INTEGER NOT NULL,
+                    CleanFolder BOOLEAN NOT NULL,
+                    Parameter TEXT,
+                    PRIMARY KEY(Name, Process)
+                )''');
+    cur.close();
+
 def readGames():
     cur = conn.cursor();
     cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
     for row in cur:
         trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
+    cur.close();
 
 def track():
     if not trackedGames:
@@ -128,18 +156,21 @@ def main():
     if sys.platform.startswith('linux'):
         configdir = xdg_config_home + '/gamesPy/'
         datadir = xdg_data_home + '/gamesPy/'
+    if configdir and not os.path.exists(configdir):
+        os.makedirs(configdir)
+    if datadir and not os.path.exists(datadir):
+        os.makedirs(datadir)
     # default configurations
     config = configparser.ConfigParser();
     config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
     # read and writeback configurations, writes defaults if not set
     config.read(configdir + 'gamesPy.ini')
-    if configdir and not os.path.exists(configdir):
-        os.makedirs(configdir)
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
     global conn
     conn = sqlite3.connect(config['DATABASE']['path'])
     conn.row_factory = sqlite3.Row;
+    createDatabase()
     readGames();
     track();
     print('Good bye');

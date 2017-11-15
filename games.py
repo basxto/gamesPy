@@ -24,7 +24,7 @@ class Game:
         self.argument = argument;
     def isProcess(self, pinfo):
         #check process name
-        name = re.compile(self.process + binaryExtension);
+        name = re.compile(self.process + binaryExtension + '$');
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False;
@@ -32,7 +32,7 @@ class Game:
         if not self.argument:#!!!
             return True;
         #compare argument with every cmdline argument
-        argument = re.compile(self.argument + '$');
+        argument = re.compile(self.argument);
         if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
             return True;
         else:
@@ -58,7 +58,7 @@ class Session:
 trackedGames = [];
 
 found = {'pid': -1, 'game': '', 'started': 0}
-binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?$';
+binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
 
 
 def note(head, msg):

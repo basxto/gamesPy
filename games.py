@@ -24,6 +24,7 @@ class Game:
         self.argument = argument;
     def isProcess(self, pinfo):
         #check process name
+        binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
         name = re.compile(self.process + binaryExtension + '$');
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
@@ -55,10 +56,43 @@ class Session:
     def getDuration(self):
         return self.end-self.start;
 
-trackedGames = [];
-
-found = {'pid': -1, 'game': '', 'started': 0}
-binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
+class Storage:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(path)
+        self.conn.row_factory = sqlite3.Row;
+        self.createDatabase();
+    def createDatabase(self):
+        #compatible to GBM v1.04
+        cur = self.conn.cursor();
+        cur.execute('''CREATE TABLE IF NOT EXISTS monitorlist (
+                        MonitorID TEXT NOT NULL UNIQUE,
+                        Name TEXT NOT NULL,
+                        Process TEXT NOT NULL,
+                        Path TEXT,
+                        AbsolutePath BOOLEAN NOT NULL,
+                        FolderSave BOOLEAN NOT NULL,
+                        FileType TEXT,
+                        TimeStamp BOOLEAN NOT NULL,
+                        ExcludeList TEXT NOT NULL,
+                        ProcessPath TEXT,
+                        Icon TEXT,
+                        Hours REAL,
+                        Version TEXT,
+                        Company TEXT,
+                        Enabled BOOLEAN NOT NULL,
+                        MonitorOnly BOOLEAN NOT NULL,
+                        BackupLimit INTEGER NOT NULL,
+                        CleanFolder BOOLEAN NOT NULL,
+                        Parameter TEXT,
+                        PRIMARY KEY(Name, Process)
+                    )''');
+        cur.close();
+    def readGames(self, trackedGames):
+        cur = self.conn.cursor();
+        cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
+        for row in cur:
+            trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
+        cur.close();
 
 
 def note(head, msg):
@@ -66,47 +100,14 @@ def note(head, msg):
         notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
-def createDatabase():
-    #compatible to GBM v1.04
-    cur = conn.cursor();
-    cur.execute('''CREATE TABLE IF NOT EXISTS monitorlist (
-                    MonitorID TEXT NOT NULL UNIQUE,
-                    Name TEXT NOT NULL,
-                    Process TEXT NOT NULL,
-                    Path TEXT,
-                    AbsolutePath BOOLEAN NOT NULL,
-                    FolderSave BOOLEAN NOT NULL,
-                    FileType TEXT,
-                    TimeStamp BOOLEAN NOT NULL,
-                    ExcludeList TEXT NOT NULL,
-                    ProcessPath TEXT,
-                    Icon TEXT,
-                    Hours REAL,
-                    Version TEXT,
-                    Company TEXT,
-                    Enabled BOOLEAN NOT NULL,
-                    MonitorOnly BOOLEAN NOT NULL,
-                    BackupLimit INTEGER NOT NULL,
-                    CleanFolder BOOLEAN NOT NULL,
-                    Parameter TEXT,
-                    PRIMARY KEY(Name, Process)
-                )''');
-    cur.close();
-
-def readGames():
-    cur = conn.cursor();
-    cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
-    for row in cur:
-        trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
-    cur.close();
-
-def track():
+def track(trackedGames):
     if not trackedGames:
         print('Empty game list...');
         return
     print('{} games are known'.format(len(trackedGames)));
     print('Listening for newly started games...');
     try:
+        found = {'pid': -1, 'game': '', 'started': 0}
         while 1:
             for proc in psutil.process_iter():
                 try:
@@ -147,7 +148,7 @@ def track():
                         pass;
             time.sleep(10);
     except KeyboardInterrupt:
-        print('Stopped listening for newly started games...');
+        print('\nStopped listening for newly started games...');
 
 def main():
     # default is current directory
@@ -167,12 +168,10 @@ def main():
     config.read(configdir + 'gamesPy.ini')
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
-    global conn
-    conn = sqlite3.connect(config['DATABASE']['path'])
-    conn.row_factory = sqlite3.Row;
-    createDatabase()
-    readGames();
-    track();
+    storage = Storage(config['DATABASE']['path']);
+    trackedGames = [];
+    storage.readGames(trackedGames);
+    track(trackedGames);
     print('Good bye');
 
 main();

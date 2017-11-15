@@ -11,8 +11,9 @@
 * [x] Store and accumulate played time temporarily
 
 ## 0.3
-* [ ] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [x] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
 * [x] Configuration file in correct XDG user directory
+* [ ] Accept command line arguments
 
 ## 0.4
 * [ ] Store detailed playing time in custom table (start/end)
@@ -20,6 +21,7 @@
 * [ ] Also store there the last time a game got played
 
 ## 0.5
+* [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
 * [ ] Detect duplicate game entries
 * [ ] Distinguish duplicate game entries by full path and user choice
 * [ ] Allow to run command when game start got detected
@@ -54,3 +56,5 @@
 
 ## 1.0
 * [ ] Document data format and API
+* [ ] Full documented / automated build process
+* [ ] Offer prepackaged executable

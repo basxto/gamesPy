@@ -29,7 +29,7 @@ class Game:
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False;
         # No argument is always contained
-        if self.argument:
+        if not self.argument:#!!!
             return True;
         #compare argument with every cmdline argument
         argument = re.compile(self.argument + '$');

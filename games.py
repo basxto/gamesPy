@@ -1,32 +1,40 @@
 #!/usr/bin/python3
+import os;
+import sys;
+import argparse;
 #regex
 import re;
 #track processes
 import psutil;
 import time;
 import datetime;
-#linux notifications
-import notify2;
-notify2.init('gamesPy');
-print('Listening for newly started games...');
+import configparser;
+import sqlite3;
+if sys.platform.startswith('linux'):
+    #notifications
+    import notify2;
+    notify2.init('gamesPy');
+    #follow XDG standard
+    from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    sessions = [];
     def __init__(self, name, process, argument=''):
         self.name = name;
         self.process = process;
         self.argument = argument;
+        self.sessions = [];
     def isProcess(self, pinfo):
         #check process name
-        name = re.compile(self.process + binaryExtension);
+        binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
+        name = re.compile(self.process + binaryExtension + '$');
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False;
         # No argument is always contained
-        if self.argument:
+        if not self.argument:#!!!
             return True;
         #compare argument with every cmdline argument
-        argument = re.compile(self.argument + '$');
+        argument = re.compile(self.argument);
         if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
             return True;
         else:
@@ -49,32 +57,58 @@ class Session:
     def getDuration(self):
         return self.end-self.start;
 
-trackedGames = [
-    Game('SuperTux 2', 'supertux2'),
-    Game('MegaGlest', 'megaglest'),
-    Game('Xonotic', 'xonotic-(glx|sdl)'),
-    Game('Beneath a Steel Sky', 'scummvm', 'sky'),
-    Game('Ardentryst', 'python2', 'ardentryst.py'),
-    Game('Shattered Pixel Dungeon', 'java', 'shattered-pixel-dungeon.jar'),
-    Game('Zelda Mystery of Solarus DX', 'solarus-run', 'zsdx'),
-    Game('Zelda Mystery of Solarus XD', 'solarus-run', 'zsxd'),
-    Game('Stealth Bastard Deluxe', 'runner'),
-    Game('Antichamber', 'UDKGame-Linux'),
-    Game('System Shock 2', 'Shock2')
-];
-
-sessions = [];
-
-found = {'pid': -1, 'game': '', 'started': 0}
-binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?$';
+class Storage:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(path)
+        self.conn.row_factory = sqlite3.Row;
+        self.createDatabase();
+    def createDatabase(self):
+        #compatible to GBM v1.04
+        cur = self.conn.cursor();
+        cur.execute('''CREATE TABLE IF NOT EXISTS monitorlist (
+                        MonitorID TEXT NOT NULL UNIQUE,
+                        Name TEXT NOT NULL,
+                        Process TEXT NOT NULL,
+                        Path TEXT,
+                        AbsolutePath BOOLEAN NOT NULL,
+                        FolderSave BOOLEAN NOT NULL,
+                        FileType TEXT,
+                        TimeStamp BOOLEAN NOT NULL,
+                        ExcludeList TEXT NOT NULL,
+                        ProcessPath TEXT,
+                        Icon TEXT,
+                        Hours REAL,
+                        Version TEXT,
+                        Company TEXT,
+                        Enabled BOOLEAN NOT NULL,
+                        MonitorOnly BOOLEAN NOT NULL,
+                        BackupLimit INTEGER NOT NULL,
+                        CleanFolder BOOLEAN NOT NULL,
+                        Parameter TEXT,
+                        PRIMARY KEY(Name, Process)
+                    )''');
+        cur.close();
+    def readGames(self, trackedGames):
+        cur = self.conn.cursor();
+        cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
+        for row in cur:
+            trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
+        cur.close();
 
 
 def note(head, msg):
-    notify2.Notification(head, msg).show();
+    if sys.platform.startswith('linux'):
+        notify2.Notification(head, msg).show();
     print(head + ":\n  " + msg);
 
-def track():
+def track(trackedGames):
+    if not trackedGames:
+        print('Empty game list...');
+        return
+    print('{} games are known'.format(len(trackedGames)));
+    print('Listening for newly started games...');
     try:
+        found = {'pid': -1, 'game': '', 'started': 0}
         while 1:
             for proc in psutil.process_iter():
                 try:
@@ -103,9 +137,9 @@ def track():
                 except psutil.NoSuchProcess:
                     tmpSession = Session(found['game'], datetime.datetime.fromtimestamp(pinfo['create_time']), datetime.datetime.now());
                     note(found['game'].name + " closed", 'Ended {end}'.format(end=tmpSession.start.strftime("%Y-%m-%d %H:%M:%S")));
-                    print('This session took {0}h {1}min {2}sec'.format(round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
+                    print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
                     found['game'].addSession(tmpSession);
-                    print('You played this game {0}h {1}min {2}sec in total'.format(round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
+                    print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
                     found['pid'] = -1;
                 else:
                     try:
@@ -115,7 +149,39 @@ def track():
                         pass;
             time.sleep(10);
     except KeyboardInterrupt:
-        print('Stopped listening for newly started games...');
-        print('Good bye');
+        print('\nStopped listening for newly started games...');
 
-track();
+def main():
+    #command line arguments
+    parser = argparse.ArgumentParser();
+    parser.add_argument("--dbpath", help="Path to sqlite3 database");
+    parser.add_argument("--configpath", help="Path to config file");
+    args = parser.parse_args();
+    
+    # default is current directory
+    configdir = ''
+    datadir = ''
+    if sys.platform.startswith('linux'):
+        configdir = xdg_config_home + '/gamesPy/'
+        datadir = xdg_data_home + '/gamesPy/'
+    if configdir and not os.path.exists(configdir):
+        os.makedirs(configdir)
+    if datadir and not os.path.exists(datadir):
+        os.makedirs(datadir)
+
+    # default configurations
+    config = configparser.ConfigParser();
+    config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
+    # read and writeback configurations, writes defaults if not set
+    config.read(args.configpath if args.configpath else configdir + 'gamesPy.ini');
+    # command line argument has priority
+    with open(configdir + 'gamesPy.ini', 'w+') as configfile:
+        config.write(configfile)
+    # command line argument has priority
+    storage = Storage(args.dbpath if args.dbpath else config['DATABASE']['path']);
+    trackedGames = [];
+    storage.readGames(trackedGames);
+    track(trackedGames);
+    print('Good bye');
+
+main();

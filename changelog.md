@@ -1,3 +1,7 @@
+## 0.3
+* Config file that follows XDG standard
+* Read game list from database
+* Command line arguments
 ## 0.2
 * Represent games and sessions with classes
 * Store and accumulate played time temporarily

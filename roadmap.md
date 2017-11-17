@@ -11,13 +11,19 @@
 * [x] Store and accumulate played time temporarily
 
 ## 0.3
-* [ ] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [x] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [x] Configuration file in correct XDG user directory
+* [x] Accept command line arguments
 
 ## 0.4
 * [ ] Store detailed playing time in custom table (start/end)
-* [ ] Add playing time to [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [ ] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [ ] Also store there the last time a game got played
 
 ## 0.5
+* [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
+* [ ] Detect duplicate game entries
+* [ ] Distinguish duplicate game entries by full path and user choice
 * [ ] Allow to run command when game start got detected
 * [ ] Allow to run command when game got closed
 * [ ] Example systemd service file
@@ -27,6 +33,8 @@
   * [ ] Current running game
   * [ ] Accumulated time a game was running
   * [ ] Last time a game got played
+  * [ ] List all sessions of a game
+  * [ ] Sorted list of all games
 * [ ] Implement primitive cli client
 
 ## 0.7
@@ -38,6 +46,7 @@
   * [ ] GOG handle (faster_than_light)
   * [ ] pcgamingwiki handle (FTL:_Faster_Than_Light)
   * [ ] holarse-linuxgaming handle (ftl)
+* [ ] Detect game by Steam ID
  
 ## 0.8
 * [ ] Support for Windows and Mac
@@ -47,3 +56,5 @@
 
 ## 1.0
 * [ ] Document data format and API
+* [ ] Full documented / automated build process
+* [ ] Offer prepackaged executable

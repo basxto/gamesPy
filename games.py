@@ -17,11 +17,11 @@ if sys.platform.startswith('linux'):
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    sessions = [];
     def __init__(self, name, process, argument=''):
         self.name = name;
         self.process = process;
         self.argument = argument;
+        self.sessions = [];
     def isProcess(self, pinfo):
         #check process name
         binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
@@ -136,9 +136,9 @@ def track(trackedGames):
                 except psutil.NoSuchProcess:
                     tmpSession = Session(found['game'], datetime.datetime.fromtimestamp(pinfo['create_time']), datetime.datetime.now());
                     note(found['game'].name + " closed", 'Ended {end}'.format(end=tmpSession.start.strftime("%Y-%m-%d %H:%M:%S")));
-                    print('This session took {0}h {1}min {2}sec'.format(round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
+                    print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
                     found['game'].addSession(tmpSession);
-                    print('You played this game {0}h {1}min {2}sec in total'.format(round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
+                    print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
                     found['pid'] = -1;
                 else:
                     try:

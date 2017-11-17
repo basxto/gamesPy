@@ -13,7 +13,7 @@
 ## 0.3
 * [x] Read monitoring data of [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
 * [x] Configuration file in correct XDG user directory
-* [ ] Accept command line arguments
+* [x] Accept command line arguments
 
 ## 0.4
 * [ ] Store detailed playing time in custom table (start/end)

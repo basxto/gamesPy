@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os;
 import sys;
+import argparse;
 #regex
 import re;
 #track processes
@@ -151,6 +152,12 @@ def track(trackedGames):
         print('\nStopped listening for newly started games...');
 
 def main():
+    #command line arguments
+    parser = argparse.ArgumentParser();
+    parser.add_argument("--dbpath", help="Path to sqlite3 database");
+    parser.add_argument("--configpath", help="Path to config file");
+    args = parser.parse_args();
+    
     # default is current directory
     configdir = ''
     datadir = ''
@@ -161,14 +168,17 @@ def main():
         os.makedirs(configdir)
     if datadir and not os.path.exists(datadir):
         os.makedirs(datadir)
+
     # default configurations
     config = configparser.ConfigParser();
     config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
     # read and writeback configurations, writes defaults if not set
-    config.read(configdir + 'gamesPy.ini')
+    config.read(args.configpath if args.configpath else configdir + 'gamesPy.ini');
+    # command line argument has priority
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
-    storage = Storage(config['DATABASE']['path']);
+    # command line argument has priority
+    storage = Storage(args.dbpath if args.dbpath else config['DATABASE']['path']);
     trackedGames = [];
     storage.readGames(trackedGames);
     track(trackedGames);

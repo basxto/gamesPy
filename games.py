@@ -143,7 +143,7 @@ def track(trackedGames):
                 try:
                     pinfo = proc.as_dict(attrs=['pid', 'name', 'exe', 'create_time', 'cwd', 'cmdline', 'environ'])
                 except psutil.NoSuchProcess:
-                    pass
+                    pass;
                 else:
                     for monitorid, game in trackedGames.items():
                         #check if name is the same
@@ -185,34 +185,34 @@ def track(trackedGames):
 def main():
     #command line arguments
     parser = argparse.ArgumentParser();
-    parser.add_argument("--dbpath", help="Path to sqlite3 database");
-    parser.add_argument("--configpath", help="Path to config file");
+    parser.add_argument("--db", help="Path to sqlite3 database");
+    parser.add_argument("--config", help="Path to config file");
     parser.add_argument("--dry-run", action='store_true', help="Don't modify the database");
-    global args
+    global args;
     args = parser.parse_args();
     
     # default is current directory
-    configdir = ''
-    datadir = ''
+    configdir = '';
+    datadir = '';
     if sys.platform.startswith('linux'):
-        configdir = xdg_config_home + '/gamesPy/'
-        datadir = xdg_data_home + '/gamesPy/'
+        configdir = xdg_config_home + '/gamesPy/';
+        datadir = xdg_data_home + '/gamesPy/';
     if configdir and not os.path.exists(configdir):
-        os.makedirs(configdir)
+        os.makedirs(configdir);
     if datadir and not os.path.exists(datadir):
-        os.makedirs(datadir)
+        os.makedirs(datadir);
 
     # default configurations
     config = configparser.ConfigParser();
-    config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
+    config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'};
     # read and writeback configurations, writes defaults if not set
-    config.read(args.configpath if args.configpath else configdir + 'gamesPy.ini');
+    config.read(args.config if args.config else configdir + 'gamesPy.ini');
     # command line argument has priority
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
-        config.write(configfile)
+        config.write(configfile);
     # command line argument has priority
     global storage;
-    storage = Storage(args.dbpath if args.dbpath else config['DATABASE']['path']);
+    storage = Storage(args.db if args.db else config['DATABASE']['path']);
     trackedGames = {};
     storage.readGames(trackedGames);
     track(trackedGames);

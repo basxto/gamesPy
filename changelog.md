@@ -1,3 +1,6 @@
+## 0.4
+* Store and get sessions from database
+* Store played time in hours in database
 ## 0.3
 * Config file that follows XDG standard
 * Read game list from database

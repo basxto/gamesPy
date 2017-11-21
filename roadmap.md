@@ -16,9 +16,9 @@
 * [x] Accept command line arguments
 
 ## 0.4
-* [ ] Store detailed playing time in custom table (start/end)
-* [ ] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
-* [ ] Also store there the last time a game got played
+* [x] Store detailed playing time in custom table (start/end)
+* [x] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* ~~[ ] Also store there the last time a game got played~~ This option never existed
 
 ## 0.5
 * [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
@@ -49,6 +49,7 @@
 * [ ] Detect game by Steam ID
  
 ## 0.8
+* [ ] Optionally run with a tray icon
 * [ ] Support for Windows and Mac
 
 ## 0.9

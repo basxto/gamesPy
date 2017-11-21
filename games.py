@@ -2,6 +2,7 @@
 import os;
 import sys;
 import argparse;
+import socket;#for hostname
 #regex
 import re;
 #track processes
@@ -23,6 +24,7 @@ class Game:
         self.process = process;
         self.argument = argument;
         self.hours = hours;
+        self.monitorid = monitorid;
         self.sessions = [];
     def isProcess(self, pinfo):
         #check process name
@@ -99,14 +101,29 @@ class Storage:
         cur.close();
     def readGames(self, trackedGames):
         cur = self.conn.cursor();
-        cur.execute('SELECT MonitorID, Name, Process, Parameter, Hours FROM monitorlist');
+        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `Hours` FROM `monitorlist`');
         for row in cur:
             trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["Hours"], row["MonitorID"]);
-        cur.execute('SELECT MonitorID, Start, End FROM sessions');
+        cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`');
         for row in cur:
             trackedGames[row["MonitorID"]].addSession(Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])));
         cur.close();
-
+    def addSession(self, session):
+        #use connection as a context manager
+        try:
+            with self.conn:
+                self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
+                (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()));
+        except sqlite3.IntegrityError:
+            print("Couldn't add session to database"); 
+        print('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES ({}, {}, {}, {})'.format(session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
+    def changeGame(self, game):
+        try:
+            with self.conn:
+                self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid));
+        except sqlite3.IntegrityError:
+            print("Couldn't change game in database")
+        print('UPDATE `monitorlist` SET `Hours` = {}  WHERE `MonitorID` = {}'.format(game.hours, game.monitorid));
 
 def note(head, msg):
     if sys.platform.startswith('linux'):
@@ -151,6 +168,8 @@ def track(trackedGames):
                     note(found['game'].name + " closed", 'Ended {end}'.format(end=tmpSession.start.strftime("%Y-%m-%d %H:%M:%S")));
                     print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
                     found['game'].addSession(tmpSession);
+                    if not args.dry_run:
+                        storage.addSession(tmpSession);
                     print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
                     found['pid'] = -1;
                 else:
@@ -168,6 +187,8 @@ def main():
     parser = argparse.ArgumentParser();
     parser.add_argument("--dbpath", help="Path to sqlite3 database");
     parser.add_argument("--configpath", help="Path to config file");
+    parser.add_argument("--dry-run", action='store_true', help="Don't modify the database");
+    global args
     args = parser.parse_args();
     
     # default is current directory
@@ -190,6 +211,7 @@ def main():
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
     # command line argument has priority
+    global storage;
     storage = Storage(args.dbpath if args.dbpath else config['DATABASE']['path']);
     trackedGames = {};
     storage.readGames(trackedGames);

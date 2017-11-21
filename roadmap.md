@@ -16,7 +16,7 @@
 * [x] Accept command line arguments
 
 ## 0.4
-* [ ] Store detailed playing time in custom table (start/end)
+* [x] Store detailed playing time in custom table (start/end)
 * [ ] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
 * [ ] Also store there the last time a game got played
 

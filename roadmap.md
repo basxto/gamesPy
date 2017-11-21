@@ -17,7 +17,7 @@
 
 ## 0.4
 * [x] Store detailed playing time in custom table (start/end)
-* [ ] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
+* [x] Store playing time in [Game Backup Monitor](https://github.com/MikeMaximus/gbm) SQLite database
 * [ ] Also store there the last time a game got played
 
 ## 0.5

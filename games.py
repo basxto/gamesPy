@@ -116,14 +116,12 @@ class Storage:
                 (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()));
         except sqlite3.IntegrityError:
             print("Couldn't add session to database"); 
-        print('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES ({}, {}, {}, {})'.format(session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
     def changeGame(self, game):
         try:
             with self.conn:
                 self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid));
         except sqlite3.IntegrityError:
             print("Couldn't change game in database")
-        print('UPDATE `monitorlist` SET `Hours` = {}  WHERE `MonitorID` = {}'.format(game.hours, game.monitorid));
 
 def note(head, msg):
     if sys.platform.startswith('linux'):
@@ -166,10 +164,16 @@ def track(trackedGames):
                 except psutil.NoSuchProcess:
                     tmpSession = Session(found['game'], datetime.datetime.fromtimestamp(pinfo['create_time']), datetime.datetime.now());
                     note(found['game'].name + " closed", 'Ended {end}'.format(end=tmpSession.start.strftime("%Y-%m-%d %H:%M:%S")));
-                    print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round((tmpSession.getDuration().seconds/3600)%24),round((tmpSession.getDuration().seconds/60)%60),tmpSession.getDuration().seconds%60));
+                    seconds = tmpSession.getDuration().seconds;
+                    minutes = seconds/60;
+                    hours = minutes/60;
+                    print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60));
+                    #hour in float
+                    found['game'].hours += hours;
                     found['game'].addSession(tmpSession);
                     if not args.dry_run:
                         storage.addSession(tmpSession);
+                        storage.changeGame(found['game']);
                     print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60));
                     found['pid'] = -1;
                 else:

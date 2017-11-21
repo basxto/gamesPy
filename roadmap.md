@@ -49,6 +49,7 @@
 * [ ] Detect game by Steam ID
  
 ## 0.8
+* [ ] Optionally run with a tray icon
 * [ ] Support for Windows and Mac
 
 ## 0.9

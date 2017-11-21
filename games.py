@@ -18,10 +18,11 @@ if sys.platform.startswith('linux'):
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    def __init__(self, name, process, argument=''):
+    def __init__(self, name, process, argument='', hours=0.0, monitorid=-1):
         self.name = name;
         self.process = process;
         self.argument = argument;
+        self.hours = hours;
         self.sessions = [];
     def isProcess(self, pinfo):
         #check process name
@@ -65,34 +66,45 @@ class Storage:
     def createDatabase(self):
         #compatible to GBM v1.04
         cur = self.conn.cursor();
-        cur.execute('''CREATE TABLE IF NOT EXISTS monitorlist (
-                        MonitorID TEXT NOT NULL UNIQUE,
-                        Name TEXT NOT NULL,
-                        Process TEXT NOT NULL,
-                        Path TEXT,
-                        AbsolutePath BOOLEAN NOT NULL,
-                        FolderSave BOOLEAN NOT NULL,
-                        FileType TEXT,
-                        TimeStamp BOOLEAN NOT NULL,
-                        ExcludeList TEXT NOT NULL,
-                        ProcessPath TEXT,
-                        Icon TEXT,
-                        Hours REAL,
-                        Version TEXT,
-                        Company TEXT,
-                        Enabled BOOLEAN NOT NULL,
-                        MonitorOnly BOOLEAN NOT NULL,
-                        BackupLimit INTEGER NOT NULL,
-                        CleanFolder BOOLEAN NOT NULL,
-                        Parameter TEXT,
-                        PRIMARY KEY(Name, Process)
+        cur.execute('''CREATE TABLE IF NOT EXISTS `sessions` (
+                        `MonitorID` TEXT NOT NULL,
+                        `Start` INTEGER NOT NULL,
+                        `End` INTEGER NOT NULL,
+                        `ComputerName` TEXT NOT NULL,
+                        PRIMARY KEY(MonitorID, Start)
                     )''');
+        cur.execute('''CREATE TABLE IF NOT EXISTS `monitorlist` (
+                        `MonitorID`     TEXT    NOT NULL UNIQUE,
+                        `Name`          TEXT    NOT NULL,
+                        `Process`       TEXT    NOT NULL,
+                        `Path`          TEXT,
+                        `AbsolutePath`  BOOLEAN NOT NULL,
+                        `FolderSave`    BOOLEAN NOT NULL,
+                        `FileType`      TEXT,
+                        `TimeStamp`     BOOLEAN NOT NULL,
+                        `ExcludeList`   TEXT    NOT NULL,
+                        `ProcessPath`   TEXT,
+                        `Icon`          TEXT,
+                        `Hours`         REAL,
+                        `Version`       TEXT,
+                        `Company`       TEXT,
+                        `Enabled`       BOOLEAN NOT NULL,
+                        `MonitorOnly`   BOOLEAN NOT NULL,
+                        `BackupLimit`   INTEGER NOT NULL,
+                        `CleanFolder`   BOOLEAN NOT NULL,
+                        `Parameter`     TEXT,
+                        `Comments`      TEXT,
+                        PRIMARY KEY(`Name`, `Process`)
+                    );''');
         cur.close();
     def readGames(self, trackedGames):
         cur = self.conn.cursor();
-        cur.execute('SELECT Name, Process, Parameter, Hours FROM monitorlist ORDER BY Hours DESC, Name ASC');
+        cur.execute('SELECT MonitorID, Name, Process, Parameter, Hours FROM monitorlist');
         for row in cur:
-            trackedGames.append(Game(row["Name"],row["Process"],row["Parameter"]));
+            trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["Hours"], row["MonitorID"]);
+        cur.execute('SELECT MonitorID, Start, End FROM sessions');
+        for row in cur:
+            trackedGames[row["MonitorID"]].addSession(Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])));
         cur.close();
 
 
@@ -116,7 +128,7 @@ def track(trackedGames):
                 except psutil.NoSuchProcess:
                     pass
                 else:
-                    for game in trackedGames:
+                    for monitorid, game in trackedGames.items():
                         #check if name is the same
                         #if set also check argument
                         if game.isProcess(pinfo):
@@ -179,7 +191,7 @@ def main():
         config.write(configfile)
     # command line argument has priority
     storage = Storage(args.dbpath if args.dbpath else config['DATABASE']['path']);
-    trackedGames = [];
+    trackedGames = {};
     storage.readGames(trackedGames);
     track(trackedGames);
     print('Good bye');

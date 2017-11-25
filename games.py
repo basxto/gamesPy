@@ -3,6 +3,10 @@ import os;
 import sys;
 import argparse;
 import socket;#for hostname
+#xml import
+import urllib.request;
+import uuid;
+import xml.etree.ElementTree as ET
 #regex
 import re;
 #track processes
@@ -19,7 +23,7 @@ if sys.platform.startswith('linux'):
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    def __init__(self, name, process, argument='', processPath='', hours=0.0, monitorid=-1):
+    def __init__(self, name, process, argument='', processPath='', hours=0.0, monitorid='unknown'):
         self.name = name;
         self.process = process;
         self.argument = argument;
@@ -67,6 +71,22 @@ class Session:
     #returns a time delta
     def getDuration(self):
         return self.end-self.start;
+
+class XMLSharing:
+    #parse xml game list
+    def read(self, url):
+        with urllib.request.urlopen(url) as f:
+            gameList = ET.fromstring(f.read().decode('utf-8'));
+            for game in gameList.iter('Game'):
+                name = game.findtext('Name');
+                process = game.findtext('ProcessName');
+                parameter = game.findtext('Parameter', '');
+                monitorId = str(uuid.uuid4());
+                absolutePath = game.findtext('AbsolutePath', 'false') == 'true';
+                folderSave = game.findtext('FolderSave', 'false') == 'true';
+                excludeList = game.findtext('ExcludeList', '');
+                monitorOnly = game.findtext('MonitorOnly', 'false') == 'true';
+                storage.addGame(name, process, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly);
 
 class Storage:
     def __init__(self, path):
@@ -137,7 +157,16 @@ class Storage:
             with self.conn:
                 self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid));
         except sqlite3.IntegrityError:
-            print("Couldn't change game in database")
+            print("Couldn't change game {} in database".format(game.name))
+    def addGame(self, name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly):
+        try:
+            with self.conn:
+                #self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`MonitorID`, `Name`, `Process`, `Parameter`) VALUES (?, ?, ?, ?)', (game.monitorid, game.name, game.process, game.argument));
+                # much ballast from gbm
+                self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly, True, False, 2, False));
+        except sqlite3.IntegrityError:
+            print("Couldn't add game {} to database".format(name))
 
 def note(head, msg):
     if sys.platform.startswith('linux'):
@@ -207,6 +236,7 @@ def main():
     parser = argparse.ArgumentParser();
     parser.add_argument("--db", help="Path to sqlite3 database");
     parser.add_argument("--config", help="Path to config file");
+    parser.add_argument("--xmlimport", help="URL of xml game list");
     parser.add_argument("--dry-run", action='store_true', help="Don't modify the database");
     global args;
     args = parser.parse_args();
@@ -234,6 +264,8 @@ def main():
     global storage;
     storage = Storage(args.db if args.db else config['DATABASE']['path']);
     trackedGames = {};
+    if args.xmlimport:
+        XMLSharing().read(args.xmlimport);
     storage.readGames(trackedGames);
     track(trackedGames);
     print('Good bye');

@@ -21,7 +21,7 @@
 * ~~[ ] Also store there the last time a game got played~~ This option never existed
 
 ## 0.5
-* [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
+* [x] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
 * [x] Detect ~~duplicate~~ ambiguous game entries
 * [x] Distinguish ~~duplicate~~ ambiguous game entries by full path ~~and user choice~~
 * [ ] Allow to run command when game start got detected

@@ -19,10 +19,11 @@ if sys.platform.startswith('linux'):
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    def __init__(self, name, process, argument='', hours=0.0, monitorid=-1):
+    def __init__(self, name, process, argument='', processPath='', hours=0.0, monitorid=-1):
         self.name = name;
         self.process = process;
         self.argument = argument;
+        self.processPath = processPath;
         self.hours = hours;
         self.monitorid = monitorid;
         self.sessions = [];
@@ -34,8 +35,11 @@ class Game:
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False;
-        if self.lookalikes:
-            print('Games with ambiguous process names do not get detected yet');
+        #a daemon can't ask the user which game this is
+        #a client would have to clarify this
+        if self.lookalikes and (self.processPath != pinfo['cwd']):
+            print('Warning: Process name is ambiguous.');
+            print('Warning: There is no process path stored to distinguish these games.');
             return False;
         # No argument is always contained
         if not self.argument:#!!!
@@ -109,9 +113,9 @@ class Storage:
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)');
         for row in cur:
             ambiguous[row["Process"]] = {'parameter':row["Parameter"], 'games':[]};
-        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `Hours` FROM `monitorlist`');
+        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `Hours` FROM `monitorlist`');
         for row in cur:
-            trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["Hours"], row["MonitorID"]);
+            trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["Hours"], row["MonitorID"]);
             #mark games with ambiguous process names
             if (row["Process"] in ambiguous) and (ambiguous[row["Process"]]['parameter'] == row["Parameter"]):
                 trackedGames[row["MonitorID"]].lookalikes = ambiguous[row["Process"]]['games'];

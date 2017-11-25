@@ -22,8 +22,8 @@
 
 ## 0.5
 * [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
-* [ ] Detect duplicate game entries
-* [ ] Distinguish duplicate game entries by full path and user choice
+* [x] Detect ~~duplicate~~ ambiguous game entries
+* [ ] Distinguish ~~duplicate~~ ambiguous game entries by full path and user choice
 * [ ] Allow to run command when game start got detected
 * [ ] Allow to run command when game got closed
 * [ ] Example systemd service file

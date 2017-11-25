@@ -26,12 +26,16 @@ class Game:
         self.hours = hours;
         self.monitorid = monitorid;
         self.sessions = [];
+        self.lookalikes = [];
     def isProcess(self, pinfo):
         #check process name
         binaryExtension = '(\.(exe|run|elf|bin))?(\.(x86(_64)?|(amd|x)64))?';
         name = re.compile(self.process + binaryExtension + '$');
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
+            return False;
+        if self.lookalikes:
+            print('Games with ambiguous process names do not get detected yet');
             return False;
         # No argument is always contained
         if not self.argument:#!!!
@@ -100,10 +104,18 @@ class Storage:
                     );''');
         cur.close();
     def readGames(self, trackedGames):
+        ambiguous = {};
         cur = self.conn.cursor();
+        cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)');
+        for row in cur:
+            ambiguous[row["Process"]] = {'parameter':row["Parameter"], 'games':[]};
         cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `Hours` FROM `monitorlist`');
         for row in cur:
             trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["Hours"], row["MonitorID"]);
+            #mark games with ambiguous process names
+            if (row["Process"] in ambiguous) and (ambiguous[row["Process"]]['parameter'] == row["Parameter"]):
+                trackedGames[row["MonitorID"]].lookalikes = ambiguous[row["Process"]]['games'];
+                ambiguous[row["Process"]]['games'].append(trackedGames[row["MonitorID"]]);
         cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`');
         for row in cur:
             trackedGames[row["MonitorID"]].addSession(Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])));

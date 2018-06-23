@@ -38,6 +38,7 @@
 * [ ] Implement primitive cli client
 
 ## 0.7
+* [ ] Export games as XML
 * [ ] Improve communicability of games (at example FTL: Faster Than Light)
   * [ ] Steam ID (212680)
   * [ ] Amazon ID (B00D7GNPO2)

@@ -1,3 +1,6 @@
+* Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
+* Detect ambiguous game entries
+* Distinguish ambiguous game entries by full path
 ## 0.4
 * Store and get sessions from database
 * Store played time in hours in database

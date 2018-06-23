@@ -2,24 +2,24 @@
 import os
 import sys
 import argparse
-import socket #for hostname
-#xml import
+import socket # for hostname
+# xml import
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
-#regex
+# regex
 import re
-#track processes
+# track processes
 import psutil
 import time
 import datetime
 import configparser
 import sqlite3
 if sys.platform.startswith('linux'):
-    #notifications
+    # notifications
     import notify2
     notify2.init('gamesPy')
-    #follow XDG standard
+    # follow XDG standard
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
@@ -33,14 +33,14 @@ class Game:
         self.sessions = []
         self.lookalikes = []
     def isProcess(self, pinfo):
-        #check process name
+        # check process name
         binaryExtension = '(\\.(exe|run|elf|bin))?(\\.(x86(_64)?|(amd|x)64))?'
         name = re.compile(self.process + binaryExtension + '$')
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False
-        #a daemon can't ask the user which game this is
-        #a client would have to clarify this
+        # a daemon can't ask the user which game this is
+        # a client would have to clarify this
         if self.lookalikes and (self.processPath != pinfo['cwd']):
             print('Warning: Process name is ambiguous.')
             print('Warning: There is no process path stored to distinguish these games.')
@@ -48,7 +48,7 @@ class Game:
         # No argument is always contained
         if not self.argument:#!!!
             return True
-        #compare argument with every cmdline argument
+        # compare argument with every cmdline argument
         argument = re.compile(self.argument)
         if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
             return True
@@ -56,7 +56,7 @@ class Game:
             return False
     def addSession(self, session):
         self.sessions.append(session)
-    #Returns time delta
+    # Returns time delta
     def getPlaytime(self):
         timeAccu = datetime.timedelta()
         for session in self.sessions:
@@ -68,25 +68,36 @@ class Session:
         self.game = game
         self.start = start
         self.end = end
-    #returns a time delta
+    # returns a time delta
     def getDuration(self):
         return self.end-self.start
 
 class XMLSharing:
-    #parse xml game list
-    def read(self, url):
+    appVer = 104
+    # parse xml game list
+    def read(self, url, update=False):
         with urllib.request.urlopen(url) as f:
             gameList = ET.fromstring(f.read().decode('utf-8'))
-            for game in gameList.iter('Game'):
-                name = game.findtext('Name')
-                process = game.findtext('ProcessName')
-                parameter = game.findtext('Parameter', '')
-                monitorId = str(uuid.uuid4())
-                absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
-                folderSave = game.findtext('FolderSave', 'false') == 'true'
-                excludeList = game.findtext('ExcludeList', '')
-                monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
-                storage.addGame(name, process, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly)
+            print('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+            if int(gameList.attrib['AppVer']) > self.appVer:
+                print('XML format of game list is too new\n')
+            else:
+                if (update and int(gameList.attrib['date']) <= int(config['UPDATE']['date']) ):
+                    print('No updated game list available')
+                else:
+                    for game in gameList.iter('Game'):
+                        name = game.findtext('Name')
+                        process = game.findtext('ProcessName')
+                        parameter = game.findtext('Parameter', '')
+                        monitorId = str(uuid.uuid4())
+                        absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
+                        folderSave = game.findtext('FolderSave', 'false') == 'true'
+                        excludeList = game.findtext('ExcludeList', '')
+                        monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
+                        storage.addGame(name, process, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly)
+                    if update:
+                        config['UPDATE']['date'] = gameList.attrib['date']
+                        print('Updated game list')
 
 class Storage:
     def __init__(self, path):
@@ -94,7 +105,7 @@ class Storage:
         self.conn.row_factory = sqlite3.Row
         self.createDatabase()
     def createDatabase(self):
-        #compatible to GBM v1.04
+        # compatible to GBM v1.04
         cur = self.conn.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS `sessions` (
                         `MonitorID` TEXT NOT NULL,
@@ -136,7 +147,7 @@ class Storage:
         cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `Hours` FROM `monitorlist`')
         for row in cur:
             trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["Hours"], row["MonitorID"])
-            #mark games with ambiguous process names
+            # mark games with ambiguous process names
             if (row["Process"] in ambiguous) and (ambiguous[row["Process"]]['parameter'] == row["Parameter"]):
                 trackedGames[row["MonitorID"]].lookalikes = ambiguous[row["Process"]]['games']
                 ambiguous[row["Process"]]['games'].append(trackedGames[row["MonitorID"]])
@@ -145,7 +156,7 @@ class Storage:
             trackedGames[row["MonitorID"]].addSession(Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])))
         cur.close()
     def addSession(self, session):
-        #use connection as a context manager
+        # use connection as a context manager
         try:
             with self.conn:
                 self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
@@ -161,7 +172,7 @@ class Storage:
     def addGame(self, name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly):
         try:
             with self.conn:
-                #self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`MonitorID`, `Name`, `Process`, `Parameter`) VALUES (?, ?, ?, ?)', (game.monitorid, game.name, game.process, game.argument));
+                # self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`MonitorID`, `Name`, `Process`, `Parameter`) VALUES (?, ?, ?, ?)', (game.monitorid, game.name, game.process, game.argument));
                 # much ballast from gbm
                 self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly, True, False, 2, False))
@@ -189,8 +200,8 @@ def track(trackedGames):
                     pass
                 else:
                     for monitorid, game in trackedGames.items():
-                        #check if name is the same
-                        #if set also check argument
+                        # check if name is the same
+                        # if set also check argument
                         if game.isProcess(pinfo):
                             found['pid'] = pinfo['pid']
                             found['game'] = game
@@ -201,7 +212,7 @@ def track(trackedGames):
                             break
                     if found['pid'] != -1:
                         break
-            #wait for running process
+            # wait for running process
             while found['pid'] != -1:
                 try:
                     p = psutil.Process(found['pid'])
@@ -223,7 +234,7 @@ def track(trackedGames):
                     found['pid'] = -1
                 else:
                     try:
-                        #wait for process to exit or 5 seconds
+                        # wait for process to exit or 5 seconds
                         p.wait(5)
                     except psutil.TimeoutExpired:
                         pass
@@ -237,7 +248,8 @@ def main():
     parser.add_argument("--db", help="Path to sqlite3 database")
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument("--xmlimport", help="URL of xml game list")
-    parser.add_argument("--dry-run", action='store_true', help="Don't modify the database")
+    parser.add_argument("--update", help="Update games list from official website")
+    parser.add_argument("--dry-run", action='store_true', help="Don't modify the database") #TODO
     global args
     args = parser.parse_args()
     
@@ -254,8 +266,13 @@ def main():
         os.makedirs(datadir)
 
     # default configurations
+    global config
     config = configparser.ConfigParser()
     config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
+    config['UPDATE'] = {
+        'date': 0,
+        'url': 'https://basxto.github.io/gbm-web/GBM_Official_Linux.xml',
+    }
     # read and writeback configurations, writes defaults if not set
     config.read(args.config if args.config else configdir + 'gamesPy.ini')
     # command line argument has priority
@@ -267,6 +284,11 @@ def main():
     trackedGames = {}
     if args.xmlimport:
         XMLSharing().read(args.xmlimport)
+    if args.update and ( args.update == 'yes' or args.update == 'true' ):
+        XMLSharing().read(config['UPDATE']['url'], True)
+        # update config file
+        with open(configdir + 'gamesPy.ini', 'w+') as configfile:
+            config.write(configfile)
     storage.readGames(trackedGames)
     track(trackedGames)
     print('Good bye')

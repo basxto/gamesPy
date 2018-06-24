@@ -73,30 +73,33 @@ class Session:
         return self.end-self.start
 
 class XMLSharing:
-    appVer = 104
+    appVer = 112
     # parse xml game list
     def read(self, url, update=False):
         with urllib.request.urlopen(url) as f:
             gameList = ET.fromstring(f.read().decode('utf-8'))
-            print('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
-            if int(gameList.attrib['AppVer']) > self.appVer:
+            if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
                 print('XML format of game list is too new\n')
             else:
-                if (update and int(gameList.attrib['date']) <= int(config['UPDATE']['date']) ):
+                print('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+                if (update and int(gameList.attrib['Exported']) <= int(config['UPDATE']['date']) ):
                     print('No updated game list available')
                 else:
                     for game in gameList.iter('Game'):
                         name = game.findtext('Name')
                         process = game.findtext('ProcessName')
+                        isRegex = game.findtext('IsRegex', 'false')
                         parameter = game.findtext('Parameter', '')
-                        monitorId = str(uuid.uuid4())
+                        monitorId = game.findtext('id', str(uuid.uuid4()))
                         absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
                         folderSave = game.findtext('FolderSave', 'false') == 'true'
+                        includeList = game.findtext('IncludeList', '')
                         excludeList = game.findtext('ExcludeList', '')
                         monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
-                        storage.addGame(name, process, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly)
+                        comments = game.findtext('Comments', '')
+                        storage.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
                     if update:
-                        config['UPDATE']['date'] = gameList.attrib['date']
+                        config['UPDATE']['date'] = gameList.attrib['Exported']
                         print('Updated game list')
 
 class Storage:
@@ -118,6 +121,7 @@ class Storage:
                         `MonitorID`     TEXT    NOT NULL UNIQUE,
                         `Name`          TEXT    NOT NULL,
                         `Process`       TEXT    NOT NULL,
+                        `IsRegex`       BOOLEAN NOT NULL,
                         `Path`          TEXT,
                         `AbsolutePath`  BOOLEAN NOT NULL,
                         `FolderSave`    BOOLEAN NOT NULL,
@@ -169,13 +173,13 @@ class Storage:
                 self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid))
         except sqlite3.IntegrityError:
             print("Couldn't change game {} in database".format(game.name))
-    def addGame(self, name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly):
+    def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         try:
             with self.conn:
                 # self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`MonitorID`, `Name`, `Process`, `Parameter`) VALUES (?, ?, ?, ?)', (game.monitorid, game.name, game.process, game.argument));
                 # much ballast from gbm
-                self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (name, process, argument, monitorid, absolutePath, folderSave, excludeList, monitorOnly, True, False, 2, False))
+                self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `IsRegex`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Comments`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
         except sqlite3.IntegrityError:
             print("Couldn't add game {} to database".format(name))
 
@@ -270,7 +274,7 @@ def main():
     config = configparser.ConfigParser()
     config['DATABASE'] = {'path': datadir + 'gamesPy.s3db'}
     config['UPDATE'] = {
-        'date': 0,
+        'date': '0',
         'url': 'https://basxto.github.io/gbm-web/GBM_Official_Linux.xml',
     }
     # read and writeback configurations, writes defaults if not set

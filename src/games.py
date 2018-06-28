@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import socket # for hostname
+import logging
 # xml import
 import urllib.request
 import uuid
@@ -42,8 +43,8 @@ class Game:
         # a daemon can't ask the user which game this is
         # a client would have to clarify this
         if self.lookalikes and (self.processPath != pinfo['cwd']):
-            print('Warning: Process name is ambiguous.')
-            print('Warning: There is no process path stored to distinguish these games.', flush=True)
+            logging.warning('Process name is ambiguous.')
+            logging.warning('There is no process path stored to distinguish these games.')
             return False
         # No argument is always contained
         if not self.argument:#!!!
@@ -79,11 +80,11 @@ class XMLSharing:
         with urllib.request.urlopen(url) as f:
             gameList = ET.fromstring(f.read().decode('utf-8'))
             if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
-                print('XML format of game list is too new\n')
+                logging.warning('XML format of game list is too new\n')
             else:
-                print('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+                logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
                 if (update and int(gameList.attrib['Exported']) <= int(config['UPDATE']['date']) ):
-                    print('No updated game list available')
+                    logging.info('No updated game list available')
                 else:
                     for game in gameList.iter('Game'):
                         name = game.findtext('Name')
@@ -100,7 +101,7 @@ class XMLSharing:
                         storage.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
                     if update:
                         config['UPDATE']['date'] = gameList.attrib['Exported']
-                        print('Updated game list')
+                        logging.info('Updated game list')
     sys.stdout.flush()
 
 class Storage:
@@ -167,13 +168,13 @@ class Storage:
                 self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
                 (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
-            print("Couldn't add session to database", flush=True)
+            logging.error("Couldn't add session to database")
     def changeGame(self, game):
         try:
             with self.conn:
                 self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid))
         except sqlite3.IntegrityError:
-            print("Couldn't change game {} in database".format(game.name), flush=True)
+            logging.error("Couldn't change game {} in database".format(game.name))
     def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         try:
             with self.conn:
@@ -182,19 +183,19 @@ class Storage:
                 self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `IsRegex`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Comments`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
         except sqlite3.IntegrityError:
-            print("Couldn't add game {} to database".format(name), flush=True)
+            logging.error("Couldn't add game {} to database".format(name))
 
 def note(head, msg):
     if sys.platform.startswith('linux'):
         notify2.Notification(head, msg).show()
-    print(head + ":\n  " + msg)
+    logging.info(head + ":\n  " + msg)
 
 def track(trackedGames):
     if not trackedGames:
-        print('Empty game list...')
+        logging.info('Empty game list...')
         return
-    print('{} games are known'.format(len(trackedGames)))
-    print('Listening for newly started games...', flush=True)
+    logging.info('{} games are known'.format(len(trackedGames)))
+    logging.info('Listening for newly started games...')
     try:
         found = {'pid': -1, 'game': None, 'started': 0}
         while 1:
@@ -228,14 +229,14 @@ def track(trackedGames):
                     seconds = tmpSession.getDuration().seconds
                     minutes = seconds/60
                     hours = minutes/60
-                    print('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60))
+                    logging.info('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60))
                     #hour in float
                     found['game'].hours += hours
                     found['game'].addSession(tmpSession)
                     if not args.dry_run:
                         storage.addSession(tmpSession)
                         storage.changeGame(found['game'])
-                    print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60), flush=True)
+                    logging.info('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
                     found['pid'] = -1
                 else:
                     try:
@@ -245,7 +246,7 @@ def track(trackedGames):
                         pass
             time.sleep(10)
     except KeyboardInterrupt:
-        print('\nStopped listening for newly started games...', flush=True)
+        logging.info('Stopped listening for newly started games...\n')
 
 def main():
     #command line arguments
@@ -254,6 +255,7 @@ def main():
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument("--xmlimport", help="URL of xml game list")
     parser.add_argument("--update", help="Update games list from official website")
+    parser.add_argument("--log", default="WARNING", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
     parser.add_argument("--dry-run", action='store_true', help="Don't modify the database") #TODO
     global args
     args = parser.parse_args()
@@ -269,7 +271,14 @@ def main():
         os.makedirs(configdir)
     if datadir and not os.path.exists(datadir):
         os.makedirs(datadir)
-
+    # configure logging
+    # loglevel defaults to warning if input is incorrect 
+    logging.basicConfig(
+        filename=datadir+'gpy.log',
+        format='[%(asctime)s] %(levelname)s:%(message)s',
+        level=getattr(logging, args.log.upper(), logging.WARNING)
+    )
+    print("Log file at {}".format(datadir+'gpy.log'))
     # default configurations
     global config
     config = configparser.ConfigParser()
@@ -296,6 +305,5 @@ def main():
             config.write(configfile)
     storage.readGames(trackedGames)
     track(trackedGames)
-    print('Good bye', flush=True)
 
 main()

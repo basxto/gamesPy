@@ -77,32 +77,35 @@ class XMLSharing:
     appVer = 112
     # parse xml game list
     def read(self, url, update=False):
-        with urllib.request.urlopen(url) as f:
-            gameList = ET.fromstring(f.read().decode('utf-8'))
-            if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
-                logging.warning('XML format of game list is too new\n')
-            else:
-                logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
-                if (update and int(gameList.attrib['Exported']) <= int(config['UPDATE']['date']) ):
-                    logging.info('No updated game list available')
+        try:
+            with urllib.request.urlopen(url) as f:
+                gameList = ET.fromstring(f.read().decode('utf-8'))
+                if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
+                    logging.warning('XML format of game list is too new\n')
                 else:
-                    for game in gameList.iter('Game'):
-                        name = game.findtext('Name')
-                        process = game.findtext('ProcessName')
-                        isRegex = game.findtext('IsRegex', 'false')
-                        parameter = game.findtext('Parameter', '')
-                        monitorId = game.findtext('id', str(uuid.uuid4()))
-                        absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
-                        folderSave = game.findtext('FolderSave', 'false') == 'true'
-                        includeList = game.findtext('IncludeList', '')
-                        excludeList = game.findtext('ExcludeList', '')
-                        monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
-                        comments = game.findtext('Comments', '')
-                        storage.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
-                    if update:
-                        config['UPDATE']['date'] = gameList.attrib['Exported']
-                        logging.info('Updated game list')
-    sys.stdout.flush()
+                    logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+                    if (update and int(gameList.attrib['Exported']) <= int(config['UPDATE']['date']) ):
+                        logging.info('No updated game list available')
+                    else:
+                        for game in gameList.iter('Game'):
+                            name = game.findtext('Name')
+                            process = game.findtext('ProcessName')
+                            isRegex = game.findtext('IsRegex', 'false')
+                            parameter = game.findtext('Parameter', '')
+                            monitorId = game.findtext('id', str(uuid.uuid4()))
+                            absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
+                            folderSave = game.findtext('FolderSave', 'false') == 'true'
+                            includeList = game.findtext('IncludeList', '')
+                            excludeList = game.findtext('ExcludeList', '')
+                            monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
+                            comments = game.findtext('Comments', '')
+                            storage.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
+                        if update:
+                            config['UPDATE']['date'] = gameList.attrib['Exported']
+                            logging.info('Updated game list')
+        except urllib.error.URLError:
+            logging.error("{} is not accessible".format(url))
+
 
 class Storage:
     def __init__(self, path):

@@ -26,7 +26,7 @@
 * [x] Distinguish ~~duplicate~~ ambiguous game entries by full path ~~and user choice~~
 * [ ] Allow to run command when game start got detected
 * [ ] Allow to run command when game got closed
-* [ ] Example systemd service file
+* [x] Example systemd service file
 
 ## 0.6
 * [ ] Allow clients to request informations

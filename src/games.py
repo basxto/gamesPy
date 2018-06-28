@@ -43,7 +43,7 @@ class Game:
         # a client would have to clarify this
         if self.lookalikes and (self.processPath != pinfo['cwd']):
             print('Warning: Process name is ambiguous.')
-            print('Warning: There is no process path stored to distinguish these games.')
+            print('Warning: There is no process path stored to distinguish these games.', flush=True)
             return False
         # No argument is always contained
         if not self.argument:#!!!
@@ -101,6 +101,7 @@ class XMLSharing:
                     if update:
                         config['UPDATE']['date'] = gameList.attrib['Exported']
                         print('Updated game list')
+    sys.stdout.flush()
 
 class Storage:
     def __init__(self, path):
@@ -166,13 +167,13 @@ class Storage:
                 self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
                 (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
-            print("Couldn't add session to database")
+            print("Couldn't add session to database", flush=True)
     def changeGame(self, game):
         try:
             with self.conn:
                 self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid))
         except sqlite3.IntegrityError:
-            print("Couldn't change game {} in database".format(game.name))
+            print("Couldn't change game {} in database".format(game.name), flush=True)
     def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         try:
             with self.conn:
@@ -181,7 +182,7 @@ class Storage:
                 self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `IsRegex`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Comments`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
         except sqlite3.IntegrityError:
-            print("Couldn't add game {} to database".format(name))
+            print("Couldn't add game {} to database".format(name), flush=True)
 
 def note(head, msg):
     if sys.platform.startswith('linux'):
@@ -193,7 +194,7 @@ def track(trackedGames):
         print('Empty game list...')
         return
     print('{} games are known'.format(len(trackedGames)))
-    print('Listening for newly started games...')
+    print('Listening for newly started games...', flush=True)
     try:
         found = {'pid': -1, 'game': None, 'started': 0}
         while 1:
@@ -234,7 +235,7 @@ def track(trackedGames):
                     if not args.dry_run:
                         storage.addSession(tmpSession)
                         storage.changeGame(found['game'])
-                    print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
+                    print('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60), flush=True)
                     found['pid'] = -1
                 else:
                     try:
@@ -244,7 +245,7 @@ def track(trackedGames):
                         pass
             time.sleep(10)
     except KeyboardInterrupt:
-        print('\nStopped listening for newly started games...')
+        print('\nStopped listening for newly started games...', flush=True)
 
 def main():
     #command line arguments
@@ -295,6 +296,6 @@ def main():
             config.write(configfile)
     storage.readGames(trackedGames)
     track(trackedGames)
-    print('Good bye')
+    print('Good bye', flush=True)
 
 main()

@@ -135,7 +135,7 @@ class Storage:
                         `ExcludeList`   TEXT    NOT NULL,
                         `ProcessPath`   TEXT,
                         `Icon`          TEXT,
-                        `Hours`         REAL,
+                        `Hours`         REAL    DEFAULT 0,
                         `Version`       TEXT,
                         `Company`       TEXT,
                         `Enabled`       BOOLEAN NOT NULL,
@@ -188,6 +188,7 @@ class Storage:
         except sqlite3.IntegrityError:
             logging.error("Couldn't add game {} to database".format(name))
 
+#TODO move to demo client
 def note(head, msg):
     if sys.platform.startswith('linux'):
         notify2.Notification(head, msg).show()
@@ -281,7 +282,7 @@ def main():
         format='[%(asctime)s] %(levelname)s:%(message)s',
         level=getattr(logging, args.log.upper(), logging.WARNING)
     )
-    print("Log file at {}".format(datadir+'gpy.log'))
+    print("Log file at {}".format(datadir+'gpy.log'), flush=True)
     # default configurations
     global config
     config = configparser.ConfigParser()

@@ -4,6 +4,7 @@ import sys
 import argparse
 import socket # for hostname
 import logging
+import subprocess
 # xml import
 import urllib.request
 import uuid
@@ -217,6 +218,8 @@ def track(trackedGames):
                             found['game'] = game
                             found['startedu'] = pinfo['create_time']
                             note(game.name + ' started', 'Has PID {pid} and was started {start}'.format(pid=pinfo['pid'],start=datetime.datetime.fromtimestamp(pinfo['create_time']).strftime("%Y-%m-%d %H:%M:%S")))
+                            # run custom program on start
+                            subprocess.Popen(config['RUN']['onstart'].format(name=found['game'].name, id=found['game'].monitorid, start=pinfo['create_time']), shell=True)
                             break
                         if found['pid'] != -1:
                             break
@@ -242,6 +245,8 @@ def track(trackedGames):
                         storage.changeGame(found['game'])
                     logging.info('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
                     found['pid'] = -1
+                    # run custom program on end
+                    subprocess.Popen(config['RUN']['onquit'].format(name=found['game'].name, h=round(hours%24),m=round(minutes%60),s=seconds%60, id=found['game'].monitorid, start=tmpSession.start.timestamp()), shell=True)
                 else:
                     try:
                         # wait for process to exit or 5 seconds
@@ -291,6 +296,10 @@ def main():
         'date': '0',
         'url': 'https://basxto.github.io/gbm-web/GBM_Official_Linux.xml',
     }
+    config['RUN'] = {
+        'onstart': '',
+        'onquit': ''
+    }
     # read and writeback configurations, writes defaults if not set
     config.read(args.config if args.config else configdir + 'gamesPy.ini')
     # command line argument has priority
@@ -302,7 +311,7 @@ def main():
     trackedGames = {}
     if args.xmlimport:
         XMLSharing().read(args.xmlimport)
-    if args.update and ( args.update == 'yes' or args.update == 'true' ):
+    if args.update and ( args.update.upper() == 'YES' or args.update.upper() == 'TRUE' or args.update.upper() == 'ON' ):
         XMLSharing().read(config['UPDATE']['url'], True)
         # update config file
         with open(configdir + 'gamesPy.ini', 'w+') as configfile:

@@ -25,12 +25,11 @@ if sys.platform.startswith('linux'):
     from xdg.BaseDirectory import xdg_config_home, xdg_data_home
 
 class Game:
-    def __init__(self, name, process, argument='', processPath='', hours=0.0, monitorid='unknown'):
+    def __init__(self, name, process, argument='', processPath='', monitorid='unknown'):
         self.name = name
         self.process = process
         self.argument = argument
         self.processPath = processPath
-        self.hours = hours
         self.monitorid = monitorid
         self.sessions = []
         self.lookalikes = []
@@ -132,13 +131,9 @@ class Storage:
                         `AbsolutePath`  BOOLEAN NOT NULL,
                         `FolderSave`    BOOLEAN NOT NULL,
                         `FileType`      TEXT,
-                        `TimeStamp`     BOOLEAN NOT NULL,
                         `ExcludeList`   TEXT    NOT NULL,
                         `ProcessPath`   TEXT,
-                        `Icon`          TEXT,
-                        `Hours`         REAL    DEFAULT 0,
                         `Version`       TEXT,
-                        `Company`       TEXT,
                         `Enabled`       BOOLEAN NOT NULL,
                         `MonitorOnly`   BOOLEAN NOT NULL,
                         `BackupLimit`   INTEGER NOT NULL,
@@ -154,9 +149,9 @@ class Storage:
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
         for row in cur:
             ambiguous[row["Process"]] = {'parameter':row["Parameter"], 'games':[]}
-        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `Hours` FROM `monitorlist`')
+        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath` FROM `monitorlist`')
         for row in cur:
-            trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["Hours"], row["MonitorID"])
+            trackedGames[row["MonitorID"]] = Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"])
             # mark games with ambiguous process names
             if (row["Process"] in ambiguous) and (ambiguous[row["Process"]]['parameter'] == row["Parameter"]):
                 trackedGames[row["MonitorID"]].lookalikes = ambiguous[row["Process"]]['games']
@@ -173,12 +168,7 @@ class Storage:
                 (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add session to database")
-    def changeGame(self, game):
-        try:
-            with self.conn:
-                self.conn.execute('UPDATE `monitorlist` SET `Hours` = ?  WHERE `MonitorID` = ?', (game.hours, game.monitorid))
-        except sqlite3.IntegrityError:
-            logging.error("Couldn't change game {} in database".format(game.name))
+    #def changeGame(self, game): TODO
     def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         try:
             with self.conn:
@@ -238,11 +228,9 @@ def track(trackedGames):
                     hours = minutes/60
                     logging.info('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60))
                     #hour in float
-                    found['game'].hours += hours
                     found['game'].addSession(tmpSession)
                     if not args.dry_run:
                         storage.addSession(tmpSession)
-                        storage.changeGame(found['game'])
                     logging.info('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
                     found['pid'] = -1
                     # run custom program on end

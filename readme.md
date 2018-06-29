@@ -2,6 +2,6 @@
 
 This application is meant to run in the background.
 
-[roadmap](roadmap.md)
-[changelog](changelog.md)
+* [roadmap](roadmap.md)
+* [changelog](changelog.md)
 

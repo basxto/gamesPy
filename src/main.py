@@ -60,16 +60,18 @@ def main():
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
     # command line argument has priority
-    store = storage.Database(args.db if args.db else config['DATABASE']['path'])
+    store = storage.Database(args.db if args.db else config['DATABASE']['path'], args.dry_run)
     trackedGames = {}
     if args.xmlimport:
-        storage.XMLSharing().read(args.xmlimport, config, storage)
+        store.importGames(args.xmlimport)
     if args.update and ( args.update.upper() == 'YES' or args.update.upper() == 'TRUE' or args.update.upper() == 'ON' ):
-        storage.XMLSharing().read(config['UPDATE']['url'], config, storage, True)
+        newDate = store.importGames(config['UPDATE']['url'], config['UPDATE']['date'])
+        if int(newDate) > int(config['UPDATE']['date']):
+            config['UPDATE']['date'] = newDate
         # update config file
         with open(configdir + 'gamesPy.ini', 'w+') as configfile:
             config.write(configfile)
-    store.readGames(trackedGames)
-    tracking.track(trackedGames, config, store, args.dry_run)
+    store.getGames(trackedGames)
+    tracking.track(trackedGames, config, store)
 
 main()

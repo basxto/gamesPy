@@ -10,45 +10,14 @@ import xml.etree.ElementTree as ET
 
 import games
 
-class XMLSharing:
-    appVer = 112
-    # parse xml game list
-    def read(self, url, config, storage, update=False):
-        try:
-            with urllib.request.urlopen(url) as f:
-                gameList = ET.fromstring(f.read().decode('utf-8'))
-                if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
-                    logging.warning('XML format of game list is too new\n')
-                else:
-                    logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
-                    if (update and int(gameList.attrib['Exported']) <= int(config['UPDATE']['date']) ):
-                        logging.info('No updated game list available')
-                    else:
-                        for game in gameList.iter('Game'):
-                            name = game.findtext('Name')
-                            process = game.findtext('ProcessName')
-                            isRegex = game.findtext('IsRegex', 'false')
-                            parameter = game.findtext('Parameter', '')
-                            monitorId = game.findtext('id', str(uuid.uuid4()))
-                            absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
-                            folderSave = game.findtext('FolderSave', 'false') == 'true'
-                            includeList = game.findtext('IncludeList', '')
-                            excludeList = game.findtext('ExcludeList', '')
-                            monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
-                            comments = game.findtext('Comments', '')
-                            storage.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
-                        if update:
-                            config['UPDATE']['date'] = gameList.attrib['Exported']
-                            logging.info('Updated game list')
-        except urllib.error.URLError:
-            logging.error("{} is not accessible".format(url))
-
-
 class Database:
-    def __init__(self, path):
+    def __init__(self, path, dryRun=False):
+        self.dryRun=dryRun
+        self.appVer = 112
         self.conn = sqlite3.connect(path)
         self.conn.row_factory = sqlite3.Row
         self.createDatabase()
+
     def createDatabase(self):
         # compatible to GBM v1.04
         cur = self.conn.cursor()
@@ -81,7 +50,7 @@ class Database:
                     );''')
         cur.close()
 
-    def readGames(self, trackedGames):
+    def getGames(self, trackedGames):
         ambiguous = {}
         cur = self.conn.cursor()
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
@@ -100,6 +69,9 @@ class Database:
         cur.close()
 
     def addSession(self, session):
+        if self.dryRun:
+            logging.debug('Skipped addSession')
+            return
         # use connection as a context manager
         try:
             with self.conn:
@@ -110,11 +82,46 @@ class Database:
     #def changeGame(self, game): TODO
 
     def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
+        if self.dryRun:
+            logging.debug('Skipped addGame')
+            return
         try:
             with self.conn:
-                # self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`MonitorID`, `Name`, `Process`, `Parameter`) VALUES (?, ?, ?, ?)', (game.monitorid, game.name, game.process, game.argument));
                 # much ballast from gbm
                 self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `IsRegex`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Comments`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add game {} to database".format(name))
+
+    # parse xml game list
+    # date = 0 updates always
+    def importGames(self, url, date='0'):
+        try:
+            with urllib.request.urlopen(url) as f:
+                gameList = ET.fromstring(f.read().decode('utf-8'))
+                if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
+                    logging.warning('XML format of game list is too new')
+                else:
+                    logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+                    # date = 0 always gets update
+                    if (int(gameList.attrib['Exported']) <= int(date) ):
+                        logging.info('No updated game list available')
+                    else:
+                        for game in gameList.iter('Game'):
+                            name = game.findtext('Name')
+                            process = game.findtext('ProcessName')
+                            isRegex = game.findtext('IsRegex', 'false')
+                            parameter = game.findtext('Parameter', '')
+                            monitorId = game.findtext('id', str(uuid.uuid4()))
+                            absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
+                            folderSave = game.findtext('FolderSave', 'false') == 'true'
+                            includeList = game.findtext('IncludeList', '')
+                            excludeList = game.findtext('ExcludeList', '')
+                            monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
+                            comments = game.findtext('Comments', '')
+                            self.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
+                        logging.debug('Game list imported')
+                        return gameList.attrib['Exported']
+        except urllib.error.URLError:
+            logging.error("{} is not accessible".format(url))
+        return '0'

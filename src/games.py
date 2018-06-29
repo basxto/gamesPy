@@ -10,7 +10,7 @@ class Session:
         self.end = end
     # returns a time delta
     def getDuration(self):
-        return self.end-self.start
+        return self.end - self.start
 
 class Game:
     def __init__(self, name, process, argument='', processPath='', monitorid='unknown'):

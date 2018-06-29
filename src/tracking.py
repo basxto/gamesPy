@@ -6,7 +6,7 @@ import datetime
 
 import games
 
-def track(trackedGames, config, storage, dryRun):
+def track(trackedGames, config, storage):
     if not trackedGames:
         logging.info('Empty game list...')
         return
@@ -49,8 +49,7 @@ def track(trackedGames, config, storage, dryRun):
                     logging.info('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60))
                     #hour in float
                     found['game'].addSession(tmpSession)
-                    if not dryRun:
-                        storage.addSession(tmpSession)
+                    storage.addSession(tmpSession)
                     logging.info('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
                     found['pid'] = -1
                     # run custom program on end

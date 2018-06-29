@@ -15,27 +15,7 @@ def track(trackedGames, config, storage):
     try:
         found = {'pid': -1, 'game': None, 'started': 0}
         while 1:
-            for proc in psutil.process_iter():
-                try:
-                    pinfo = proc.as_dict(attrs=['pid', 'name', 'exe', 'create_time', 'cwd', 'cmdline', 'environ'])
-                except psutil.NoSuchProcess:
-                    pass
-                else:
-                    for monitorid, game in trackedGames.items():
-                        # check if name is the same
-                        # if set also check argument
-                        if game.isProcess(pinfo):
-                            found['pid'] = pinfo['pid']
-                            found['game'] = game
-                            found['startedu'] = pinfo['create_time']
-                            logging.info('{name} has PID {pid} and was started {start}'.format(name=game.name,pid=pinfo['pid'],start=datetime.datetime.fromtimestamp(pinfo['create_time']).strftime("%Y-%m-%d %H:%M:%S")))
-                            # run custom program on start
-                            subprocess.Popen(config['RUN']['onstart'].format(name=found['game'].name, id=found['game'].monitorid, start=pinfo['create_time']), shell=True)
-                            break
-                        if found['pid'] != -1:
-                            break
-                    if found['pid'] != -1:
-                        break
+            scanProcesses(found, trackedGames, config)
             # wait for running process
             while found['pid'] != -1:
                 try:
@@ -63,3 +43,26 @@ def track(trackedGames, config, storage):
             time.sleep(10)
     except KeyboardInterrupt:
         logging.info('Stopped listening for newly started games...\n')
+
+def scanProcesses(found, trackedGames, config):
+    for proc in psutil.process_iter():
+        try:
+            pinfo = proc.as_dict(attrs=['pid', 'name', 'exe', 'create_time', 'cwd', 'cmdline', 'environ'])
+        except psutil.NoSuchProcess:
+            pass
+        else:
+            for monitorid, game in trackedGames.items():
+                # check if name is the same
+                # if set also check argument
+                if game.isProcess(pinfo):
+                    found['pid'] = pinfo['pid']
+                    found['game'] = game
+                    found['startedu'] = pinfo['create_time']
+                    logging.info('{name} has PID {pid} and was started {start}'.format(name=game.name,pid=pinfo['pid'],start=datetime.datetime.fromtimestamp(pinfo['create_time']).strftime("%Y-%m-%d %H:%M:%S")))
+                    # run custom program on start
+                    subprocess.Popen(config['RUN']['onstart'].format(name=found['game'].name, id=found['game'].monitorid, start=pinfo['create_time']), shell=True)
+                    break
+                if found['pid'] != -1:
+                    break
+            if found['pid'] != -1:
+                break

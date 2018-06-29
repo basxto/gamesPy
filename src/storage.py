@@ -51,6 +51,7 @@ class Database:
         cur.close()
 
     def getGames(self, trackedGames):
+        #TODO this does not work any longer, we use regex now
         ambiguous = {}
         cur = self.conn.cursor()
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')

@@ -23,11 +23,13 @@ class Game:
         self.lookalikes = []
     def isProcess(self, pinfo):
         # check process name
+        #TODO: work with  explicit binary extensions
         binaryExtension = '(\\.(exe|run|elf|bin))?(\\.(x86(_64)?|(amd|x)64))?'
         name = re.compile(self.process + binaryExtension + '$')
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False
+        #TODO: thanks to regex we can't rely on .lookalikes any longer
         # a daemon can't ask the user which game this is
         # a client would have to clarify this
         if self.lookalikes and (self.processPath != pinfo['cwd']):

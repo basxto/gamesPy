@@ -22,7 +22,7 @@
 
 ## 0.5
 * [x] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
-* [x] Detect ~~duplicate~~ ambiguous game entries
+* [ ] Detect ~~duplicate~~ ambiguous game entries with RegEx support
 * [x] Distinguish ~~duplicate~~ ambiguous game entries by full path ~~and user choice~~
 * [x] Allow to run command when game start got detected
 * [x] Allow to run command when game got closed

@@ -8,7 +8,7 @@ AssertPathExists=%h/gamesPy
 
 [Service]
 WorkingDirectory=%h/gamesPy/
-ExecStart=/usr/bin/python3 %h/gamesPy/src/games.py --update yes 
+ExecStart=/usr/bin/python3 %h/gamesPy/src/main.py --update yes 
 
 [Install]
 WantedBy=default.target

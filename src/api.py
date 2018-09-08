@@ -1,10 +1,17 @@
 import logging
 import subprocess
 import datetime
+import storage
 
 class Api:
     def __init__(self, config):
         self.config = config
+
+    def getGames(self):
+        store = storage.Database(self.config['DATABASE']['path'], False)
+        trackedGames = {}
+        store.getGames(trackedGames)
+        return trackedGames
 
     def onStart(self, game, started, pid):
         logging.info('{name} has PID {pid} and was started {start}'.format(name=game.name,pid=pid,start=datetime.datetime.fromtimestamp(started).strftime("%Y-%m-%d %H:%M:%S")))

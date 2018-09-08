@@ -35,7 +35,7 @@
   * [x] Last time a game got played
   * [x] List all sessions of a game
   * [x] Sorted list of all games
-* [ ] Implement primitive cli client
+* [x] Implement primitive cli client
 
 ## 0.7
 * [ ] Export games as XML

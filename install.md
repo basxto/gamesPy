@@ -10,13 +10,17 @@
 ```
 ## Getting all dependencies
 ```sh
-# pip3 install xdg notify2 psutil flask
+# pip3 install xdg notify2 psutil flask requests
 ```
-
+## Install service
+```sh
+$ ln -s ~/gamesPy/gamesPy.service ~/.config/systemd/user/
+$ systemctl --user daemon-reload
+```
 
 # Windows
 _untested_
-
+## Install Python
 Get [chocolatey](https://chocolatey.org/)
 
 Install via administrator terminal (Windows PowerShell or ConsoleZ)
@@ -26,11 +30,13 @@ Install via administrator terminal (Windows PowerShell or ConsoleZ)
 ## Getting all dependencies
 After installing python you  have to restart your terminal, then again with administrator rights do
 ```sh
-# pip3 install psutil flask
+# pip3 install psutil flask requests
 ```
 
+# Get games.py
+
 ```sh
-git clone https://github.com/basxto/gamesPy.git
-cd gamesPy
-python3 src/main.py
+$ cd ~
+$ git clone https://github.com/basxto/gamesPy.git
+$ cd gamesPy
 ```

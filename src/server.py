@@ -32,7 +32,7 @@ def listGames():
     trackedGames = appApi.getGames()
     games = {}
     for monitorid, game in trackedGames.items():
-        games[game.name] = monitorid
+        games[monitorid] = game.name
     return jsonify(games)
 
 @app.route('/game/current', methods=['GET'])

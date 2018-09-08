@@ -13,13 +13,25 @@ appApi = None
 def hello_world():
     return 'This is the RESTful API of games.py'
 
+@app.route('/session/list')
+def listSessions():
+    sessionObjects = appApi.getSessions()
+    sessions = []
+    for session in sessionObjects:
+        sessions.append({"start": session.start.timestamp(), "end": session.end.timestamp(), "id": session.game.monitorid})
+    return jsonify(sessions)
+
 @app.route('/game/list')
-def allGames():
+def listGames():
     trackedGames = appApi.getGames()
     games = {}
     for monitorid, game in trackedGames.items():
-        games[monitorid] = game.name
+        games[game.name] = monitorid
     return jsonify(games)
+
+@app.route('/game/current')
+def currentGame():
+    return 'None'
 
 @app.route('/game/<id>')
 def game(id):
@@ -37,7 +49,7 @@ def gameSessions(id):
         game = trackedGames[id]
         sessions = []
         for session in game.sessions:
-            sessions.append({"start":session.start.timestamp(),"end":session.end.timestamp()})
+            sessions.append({"start": session.start.timestamp(), "end": session.end.timestamp()})
         return jsonify(sessions)
     else:
         abort(404)

@@ -15,6 +15,16 @@ class Api:
         store.getGames(trackedGames)
         return trackedGames
 
+    def getSessions(self):
+        trackedGames = self.getGames()
+        sessions = []
+        for id, game in trackedGames.items():
+            logging.debug(game)
+            for session in game.sessions:
+                sessions.append(session)
+        return sessions
+
+
     def onStart(self, game, started, pid):
         logging.info('{name} has PID {pid} and was started {start}'.format(name=game.name,pid=pid,start=datetime.datetime.fromtimestamp(started).strftime("%Y-%m-%d %H:%M:%S")))
         subprocess.Popen(self.config['RUN']['onstart'].format(name=game.name, id=game.monitorid, start=started), shell=True)

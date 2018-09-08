@@ -15,6 +15,23 @@ class Api:
         store.getGames(trackedGames)
         return trackedGames
 
+    #thread safe
+    #game is just a dict
+    def setGame(self, id, newGame):
+        store = storage.Database(self.config['DATABASE']['path'], False)
+        trackedGames = {}
+        store.getGames(trackedGames)
+        game = trackedGames[id]
+        for attr, val in newGame.items():
+            if attr == 'name':
+                game.name = val
+            elif attr == 'process':
+                game.process = val
+            elif attr == 'argument':
+                game.argument = val
+        store.addGame(game)
+        return trackedGames
+
     def getSessions(self):
         trackedGames = self.getGames()
         sessions = []

@@ -2,6 +2,7 @@
 from flask import Flask
 from flask import jsonify
 from flask import abort
+from flask import request
 import logging
 import threading
 import games
@@ -13,7 +14,7 @@ appApi = None
 def hello_world():
     return 'This is the RESTful API of games.py'
 
-@app.route('/session/list')
+@app.route('/session/list', methods=['GET'])
 def listSessions():
     sessionObjects = appApi.getSessions()
     sessions = []
@@ -21,7 +22,12 @@ def listSessions():
         sessions.append({"start": session.start.timestamp(), "end": session.end.timestamp(), "id": session.game.monitorid})
     return jsonify(sessions)
 
-@app.route('/game/list')
+#sessions the tracker couldn’t clearly assign to a game
+@app.route('/session/unassigned', methods=['GET'])
+def unassignedSessions():
+    return 'Coming soon...'
+
+@app.route('/game/list', methods=['GET'])
 def listGames():
     trackedGames = appApi.getGames()
     games = {}
@@ -29,12 +35,15 @@ def listGames():
         games[game.name] = monitorid
     return jsonify(games)
 
-@app.route('/game/current')
+@app.route('/game/current', methods=['GET'])
 def currentGame():
-    return 'None'
+    return 'Coming soon...'
 
-@app.route('/game/<id>')
+@app.route('/game/<id>', methods=['GET', 'POST'])
 def game(id):
+    if request.method == 'POST':
+        appApi.setGame(id, request.get_json(True))
+    #always show
     trackedGames = appApi.getGames()
     if id in trackedGames:
         game = trackedGames[id]
@@ -42,7 +51,7 @@ def game(id):
     else:
         abort(404)
 
-@app.route('/game/<id>/sessions')
+@app.route('/game/<id>/sessions', methods=['GET'])
 def gameSessions(id):
     trackedGames = appApi.getGames()
     if id in trackedGames:

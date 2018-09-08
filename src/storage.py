@@ -82,9 +82,12 @@ class Database:
             logging.error("Couldn't add session to database")
     #def changeGame(self, game): TODO
 
-    def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
+    def addGame(self, game):
+        self.addPlainGame(game.name, game.process, False, game.argument, game.monitorid, '', '', '', '', True, '')
+
+    def addPlainGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         if self.dryRun:
-            logging.debug('Skipped addGame')
+            logging.debug('Skipped addPlainGame')
             return
         try:
             with self.conn:
@@ -120,7 +123,7 @@ class Database:
                             excludeList = game.findtext('ExcludeList', '')
                             monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
                             comments = game.findtext('Comments', '')
-                            self.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
+                            self.addPlainGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
                         logging.debug('Game list imported')
                         return gameList.attrib['Exported']
         except urllib.error.URLError:

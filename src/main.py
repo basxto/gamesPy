@@ -10,6 +10,7 @@ if sys.platform.startswith('linux'):
 
 import tracking
 import storage
+import api
 
 def main():
     #command line arguments
@@ -61,6 +62,7 @@ def main():
         config.write(configfile)
     # command line argument has priority
     store = storage.Database(args.db if args.db else config['DATABASE']['path'], args.dry_run)
+    myApi = api.Api(config)
     trackedGames = {}
     if args.xmlimport:
         store.importGames(args.xmlimport)
@@ -72,6 +74,6 @@ def main():
         with open(configdir + 'gamesPy.ini', 'w+') as configfile:
             config.write(configfile)
     store.getGames(trackedGames)
-    tracking.track(trackedGames, config, store)
+    tracking.track(trackedGames, config, store, myApi)
 
 main()

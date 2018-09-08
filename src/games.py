@@ -12,6 +12,12 @@ class Session:
     def getDuration(self):
         return self.end - self.start
 
+class SaveGame:
+    def __init(self):
+        self.path = ''
+        self.include = ''
+        self.exclude = ''
+
 class Game:
     def __init__(self, name, process, argument='', processPath='', monitorid='unknown'):
         self.name = name
@@ -21,6 +27,7 @@ class Game:
         self.monitorid = monitorid
         self.sessions = []
         self.lookalikes = []
+        self.saveGame = SaveGame()
     def isProcess(self, pinfo):
         # check process name
         #TODO: work with  explicit binary extensions

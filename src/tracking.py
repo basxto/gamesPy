@@ -1,12 +1,11 @@
 import logging
 import psutil
-import subprocess
 import time
 import datetime
 
 import games
 
-def track(trackedGames, config, storage):
+def track(trackedGames, config, storage, api):
     if not trackedGames:
         logging.info('Empty game list...')
         return
@@ -15,7 +14,7 @@ def track(trackedGames, config, storage):
     try:
         found = {'pid': -1, 'game': None, 'started': 0}
         while 1:
-            scanProcesses(found, trackedGames, config)
+            scanProcesses(found, trackedGames, config, api)
             # wait for running process
             while found['pid'] != -1:
                 try:
@@ -23,17 +22,10 @@ def track(trackedGames, config, storage):
                     pinfo = p.as_dict(attrs=['pid', 'name', 'create_time', 'cwd', 'cmdline', 'environ'])
                 except psutil.NoSuchProcess:
                     tmpSession = games.Session(found['game'], datetime.datetime.fromtimestamp(pinfo['create_time']), datetime.datetime.now())
-                    seconds = tmpSession.getDuration().seconds
-                    minutes = seconds/60
-                    hours = minutes/60
-                    logging.info('This session of {} took {}h {}min {}sec'.format(found['game'].name, round(hours%24),round(minutes%60),seconds%60))
-                    #hour in float
                     found['game'].addSession(tmpSession)
                     storage.addSession(tmpSession)
-                    logging.info('You played {} {}h {}min {}sec in total'.format(found['game'].name, round((found['game'].getPlaytime().seconds/3600)%24),round((found['game'].getPlaytime().seconds/60)%60),found['game'].getPlaytime().seconds%60))
                     found['pid'] = -1
-                    # run custom program on end
-                    subprocess.Popen(config['RUN']['onquit'].format(name=found['game'].name, h=round(hours%24),m=round(minutes%60),s=seconds%60, id=found['game'].monitorid, start=tmpSession.start.timestamp()), shell=True)
+                    api.onQuit(tmpSession)
                 else:
                     try:
                         # wait for process to exit or 5 seconds
@@ -44,7 +36,7 @@ def track(trackedGames, config, storage):
     except KeyboardInterrupt:
         logging.info('Stopped listening for newly started games...\n')
 
-def scanProcesses(found, trackedGames, config):
+def scanProcesses(found, trackedGames, config, api):
     for proc in psutil.process_iter():
         try:
             pinfo = proc.as_dict(attrs=['pid', 'name', 'exe', 'create_time', 'cwd', 'cmdline', 'environ'])
@@ -57,10 +49,8 @@ def scanProcesses(found, trackedGames, config):
                 if game.isProcess(pinfo):
                     found['pid'] = pinfo['pid']
                     found['game'] = game
-                    found['startedu'] = pinfo['create_time']
-                    logging.info('{name} has PID {pid} and was started {start}'.format(name=game.name,pid=pinfo['pid'],start=datetime.datetime.fromtimestamp(pinfo['create_time']).strftime("%Y-%m-%d %H:%M:%S")))
-                    # run custom program on start
-                    subprocess.Popen(config['RUN']['onstart'].format(name=found['game'].name, id=found['game'].monitorid, start=pinfo['create_time']), shell=True)
+                    found['started'] = pinfo['create_time']
+                    api.onStart(found['game'], found['started'], found['pid'])
                     break
                 if found['pid'] != -1:
                     break

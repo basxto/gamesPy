@@ -12,18 +12,22 @@ import tracking
 import storage
 import api
 
+
 def main():
-    #command line arguments
+    # command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", help="Path to sqlite3 database")
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument("--xmlimport", help="URL of xml game list")
-    parser.add_argument("--update", help="Update games list from official website")
-    parser.add_argument("--log", default="WARNING", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
-    parser.add_argument("--dry-run", action='store_true', help="Don't modify the database") #TODO
+    parser.add_argument(
+        "--update", help="Update games list from official website")
+    parser.add_argument("--log", default="WARNING",
+                        help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser.add_argument("--dry-run", action='store_true',
+                        help="Don't modify the database")  # TODO
     global args
     args = parser.parse_args()
-    
+
     # default is current directory
     configdir = ''
     datadir = ''
@@ -36,7 +40,7 @@ def main():
     if datadir and not os.path.exists(datadir):
         os.makedirs(datadir)
     # configure logging
-    # loglevel defaults to warning if input is incorrect 
+    # loglevel defaults to warning if input is incorrect
     logging.basicConfig(
         filename=datadir+'gpy.log',
         format='[%(asctime)s] %(levelname)s:%(message)s',
@@ -61,13 +65,15 @@ def main():
     with open(configdir + 'gamesPy.ini', 'w+') as configfile:
         config.write(configfile)
     # command line argument has priority
-    store = storage.Database(args.db if args.db else config['DATABASE']['path'], args.dry_run)
+    store = storage.Database(
+        args.db if args.db else config['DATABASE']['path'], args.dry_run)
     myApi = api.Api(config)
     trackedGames = {}
     if args.xmlimport:
         store.importGames(args.xmlimport)
-    if args.update and ( args.update.upper() == 'YES' or args.update.upper() == 'TRUE' or args.update.upper() == 'ON' ):
-        newDate = store.importGames(config['UPDATE']['url'], config['UPDATE']['date'])
+    if args.update and (args.update.upper() == 'YES' or args.update.upper() == 'TRUE' or args.update.upper() == 'ON'):
+        newDate = store.importGames(
+            config['UPDATE']['url'], config['UPDATE']['date'])
         if int(newDate) > int(config['UPDATE']['date']):
             config['UPDATE']['date'] = newDate
         # update config file
@@ -75,5 +81,6 @@ def main():
             config.write(configfile)
     store.getGames(trackedGames)
     tracking.track(trackedGames, config, store, myApi)
+
 
 main()

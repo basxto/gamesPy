@@ -3,6 +3,7 @@ import datetime
 # regex
 import re
 
+
 class Session:
     def __init__(self, game, start, end, ambiguous=False, matches=[]):
         self.game = game
@@ -11,8 +12,10 @@ class Session:
         self.ambiguous = ambiguous
         self.matches = matches
     # returns a time delta
+
     def getDuration(self):
         return self.end - self.start
+
 
 class SaveGame:
     def __init(self):
@@ -20,11 +23,12 @@ class SaveGame:
         self.include = ''
         self.exclude = ''
 
+
 class Game:
     def __init__(self, name, process, argument='', processPath='', monitorid='unknown', isRegex=False):
         self.name = name
         self.process = process
-        #process is regex format
+        # process is regex format
         self.isRegex = isRegex
         self.argument = argument
         self.processPath = processPath
@@ -41,12 +45,12 @@ class Game:
 
     def isProcess(self, pinfo):
         # check process name
-        #TODO: work with  explicit binary extensions
+        # TODO: work with  explicit binary extensions
         if (not self.processCompare(pinfo['name'])
-        and not self.processCompare(pinfo['exe'])):
+                and not self.processCompare(pinfo['exe'])):
             return False
         # "No argument" is always contained
-        if not self.argument:#!!!
+        if not self.argument:  # !!!
             return True
         # compare argument with every cmdline argument
         argument = re.compile(self.argument)

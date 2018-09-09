@@ -2,7 +2,7 @@ import logging
 import sqlite3
 import datetime
 import sqlite3
-import socket # for hostname
+import socket  # for hostname
 # xml import
 import urllib.request
 import uuid
@@ -10,9 +10,10 @@ import xml.etree.ElementTree as ET
 
 import games
 
+
 class Database:
     def __init__(self, path, dryRun=False):
-        self.dryRun=dryRun
+        self.dryRun = dryRun
         self.appVer = 112
         self.conn = sqlite3.connect(path)
         self.conn.row_factory = sqlite3.Row
@@ -51,15 +52,19 @@ class Database:
         cur.close()
 
     def getGames(self, trackedGames):
-        #TODO this does not work any longer, we use regex now
+        # TODO this does not work any longer, we use regex now
         cur = self.conn.cursor()
-        cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
-        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `IsRegex` FROM `monitorlist`')
+        cur.execute(
+            'SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
+        cur.execute(
+            'SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `IsRegex` FROM `monitorlist`')
         for row in cur:
-            trackedGames[row["MonitorID"]] = games.Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"], row["IsRegex"])
+            trackedGames[row["MonitorID"]] = games.Game(
+                row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"], row["IsRegex"])
         cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`')
         for row in cur:
-            trackedGames[row["MonitorID"]].addSession(games.Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])))
+            trackedGames[row["MonitorID"]].addSession(games.Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(
+                row["Start"]), datetime.datetime.fromtimestamp(row["End"])))
         cur.close()
 
     def addSession(self, session):
@@ -70,7 +75,7 @@ class Database:
         try:
             with self.conn:
                 self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
-                (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
+                                  (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add session to database")
     #def changeGame(self, game): TODO
@@ -83,7 +88,7 @@ class Database:
             with self.conn:
                 # much ballast from gbm
                 self.conn.execute('INSERT or REPLACE INTO `monitorlist` (`Name`, `Process`, `IsRegex`, `Parameter`, `MonitorID`, `AbsolutePath`, `FolderSave`, `ExcludeList`, `MonitorOnly`, `Comments`, `Enabled`, `TimeStamp`, `BackupLimit`, `CleanFolder`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
+                                  (name, process, isRegex, parameter, monitorId, absolutePath, folderSave, excludeList, monitorOnly, comments, True, False, 2, False))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add game {} to database".format(name))
 
@@ -96,9 +101,10 @@ class Database:
                 if not gameList.attrib['AppVer'] or int(gameList.attrib['AppVer']) > self.appVer:
                     logging.warning('XML format of game list is too new')
                 else:
-                    logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
+                    logging.info('URL: {}\n- Format version: {}\n- Contains {} games'.format(
+                        url, gameList.attrib['AppVer'], gameList.attrib['TotalConfigurations']))
                     # date = 0 always gets update
-                    if (int(gameList.attrib['Exported']) <= int(date) ):
+                    if (int(gameList.attrib['Exported']) <= int(date)):
                         logging.info('No updated game list available')
                     else:
                         for game in gameList.iter('Game'):
@@ -107,13 +113,17 @@ class Database:
                             isRegex = game.findtext('IsRegex', 'false')
                             parameter = game.findtext('Parameter', '')
                             monitorId = game.findtext('id', str(uuid.uuid4()))
-                            absolutePath = game.findtext('AbsolutePath', 'false') == 'true'
-                            folderSave = game.findtext('FolderSave', 'false') == 'true'
+                            absolutePath = game.findtext(
+                                'AbsolutePath', 'false') == 'true'
+                            folderSave = game.findtext(
+                                'FolderSave', 'false') == 'true'
                             includeList = game.findtext('IncludeList', '')
                             excludeList = game.findtext('ExcludeList', '')
-                            monitorOnly = game.findtext('MonitorOnly', 'false') == 'true'
+                            monitorOnly = game.findtext(
+                                'MonitorOnly', 'false') == 'true'
                             comments = game.findtext('Comments', '')
-                            self.addGame(name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments)
+                            self.addGame(name, process, isRegex, parameter, monitorId, absolutePath,
+                                         folderSave, includeList, excludeList, monitorOnly, comments)
                         logging.debug('Game list imported')
                         return gameList.attrib['Exported']
         except urllib.error.URLError:

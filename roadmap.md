@@ -31,11 +31,11 @@
 ## 0.6
 * [ ] Allow clients to request informations
   * [ ] Current running game
-  * [ ] Accumulated time a game was running
-  * [ ] Last time a game got played
-  * [ ] List all sessions of a game
-  * [ ] Sorted list of all games
-* [ ] Implement primitive cli client
+  * [x] Accumulated time a game was running
+  * [x] Last time a game got played
+  * [x] List all sessions of a game
+  * [x] Sorted list of all games
+* [x] Implement primitive cli client
 
 ## 0.7
 * [ ] Export games as XML

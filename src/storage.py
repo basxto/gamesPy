@@ -60,7 +60,8 @@ class Database:
         for row in cur:
             trackedGames[row["MonitorID"]] = games.Game(
                 row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"], row["IsRegex"])
-        cur.execute('SELECT `MonitorID`, `AbsoluteProcess`, `Start`, `End` FROM `sessions`')
+        cur.execute(
+            'SELECT `MonitorID`, `AbsoluteProcess`, `Start`, `End` FROM `sessions`')
         # get sessions
         for row in cur:
             if row["MonitorID"] in trackedGames:
@@ -68,7 +69,8 @@ class Database:
                 game.addSession(games.Session(game, datetime.datetime.fromtimestamp(
                     row["Start"]), datetime.datetime.fromtimestamp(row["End"]), row["AbsoluteProcess"], ))
             else:
-                logging.error("Game {} does not exist but has sessions".format(row["MonitorID"]))
+                logging.error(
+                    "Game {} does not exist but has sessions".format(row["MonitorID"]))
         cur.close()
 
     def addSession(self, session):
@@ -79,14 +81,18 @@ class Database:
         try:
             with self.conn:
                 self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `AbsoluteProcess`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?, ?)',
-                                (session.game.monitorid, session.absoluteProcess, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
+                                  (session.game.monitorid, session.absoluteProcess, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add session to database")
     #def changeGame(self, game): TODO
 
-    def addGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
+    def addGame(self, game):
+        self.addPlainGame(game.name, game.process, False,
+                          game.argument, game.monitorid, '', '', '', '', True, '')
+
+    def addPlainGame(self, name, process, isRegex, parameter, monitorId, absolutePath, folderSave, includeList, excludeList, monitorOnly, comments):
         if self.dryRun:
-            logging.debug('Skipped addGame')
+            logging.debug('Skipped addPlainGame')
             return
         try:
             with self.conn:
@@ -126,8 +132,8 @@ class Database:
                             monitorOnly = game.findtext(
                                 'MonitorOnly', 'false') == 'true'
                             comments = game.findtext('Comments', '')
-                            self.addGame(name, process, isRegex, parameter, monitorId, absolutePath,
-                                         folderSave, includeList, excludeList, monitorOnly, comments)
+                            self.addPlainGame(name, process, isRegex, parameter, monitorId, absolutePath,
+                                              folderSave, includeList, excludeList, monitorOnly, comments)
                         logging.debug('Game list imported')
                         return gameList.attrib['Exported']
         except urllib.error.URLError:

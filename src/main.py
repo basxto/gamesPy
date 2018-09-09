@@ -11,6 +11,9 @@ if sys.platform.startswith('linux'):
 import tracking
 import storage
 import api
+# restful server
+import server
+import threading
 
 
 def main():
@@ -23,6 +26,8 @@ def main():
         "--update", help="Update games list from official website")
     parser.add_argument("--log", default="WARNING",
                         help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser.add_argument("--port", default="6435",
+                        help="Port to listen on")  # 64M35
     parser.add_argument("--dry-run", action='store_true',
                         help="Don't modify the database")  # TODO
     global args
@@ -68,6 +73,12 @@ def main():
     store = storage.Database(
         args.db if args.db else config['DATABASE']['path'], args.dry_run)
     myApi = api.Api(config)
+    # myApi.restful(6435)
+    # launch restful  server
+    restful = threading.Thread(
+        target=server.flaskThread, args=(None, 6435, myApi))
+    restful.daemon = True
+    restful.start()
     trackedGames = {}
     if args.xmlimport:
         store.importGames(args.xmlimport)

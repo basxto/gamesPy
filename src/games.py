@@ -5,12 +5,12 @@ import re
 
 
 class Session:
-    def __init__(self, game, start, end, ambiguous=False, matches=[]):
+    def __init__(self, game, start, end, absoluteProcess=''):
         self.game = game
         self.start = start
         self.end = end
-        self.ambiguous = ambiguous
-        self.matches = matches
+        # this is only for ambiguous sessions
+        self.absoluteProcess = absoluteProcess
     # returns a time delta
 
     def getDuration(self):
@@ -67,9 +67,18 @@ class Game:
     def addSession(self, session):
         self.sessions.append(session)
 
+    def getSessions(self, ambiguous = False):
+        sessions = []
+        #TODO: filter
+        for session in self.sessions:
+            # xor inverts the expression when ambiguous = True
+            if (session.absoluteProcess == '') ^ ambiguous:
+                session.append(session)
+        return sessions
+
     # Returns time delta
     def getPlaytime(self):
         timeAccu = datetime.timedelta()
-        for session in self.sessions:
+        for session in self.getSessions():
             timeAccu += session.getDuration()
         return timeAccu

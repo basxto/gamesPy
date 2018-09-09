@@ -24,6 +24,7 @@ class Database:
         cur = self.conn.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS `sessions` (
                         `MonitorID` TEXT NOT NULL,
+                        `AbsoluteProcess` TEXT,
                         `Start` INTEGER NOT NULL,
                         `End` INTEGER NOT NULL,
                         `ComputerName` TEXT NOT NULL,
@@ -55,16 +56,16 @@ class Database:
         # TODO this does not work any longer, we use regex now
         cur = self.conn.cursor()
         cur.execute(
-            'SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
-        cur.execute(
             'SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `IsRegex` FROM `monitorlist`')
         for row in cur:
             trackedGames[row["MonitorID"]] = games.Game(
                 row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"], row["IsRegex"])
-        cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`')
+        cur.execute('SELECT `MonitorID`, `AbsoluteProcess`, `Start`, `End` FROM `sessions`')
+        # get sessions
         for row in cur:
-            trackedGames[row["MonitorID"]].addSession(games.Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(
-                row["Start"]), datetime.datetime.fromtimestamp(row["End"])))
+            game = trackedGames[row["MonitorID"]]
+            game.addSession(games.Session(game, datetime.datetime.fromtimestamp(
+                row["Start"]), datetime.datetime.fromtimestamp(row["End"]), row["AbsoluteProcess"], ))
         cur.close()
 
     def addSession(self, session):
@@ -74,8 +75,8 @@ class Database:
         # use connection as a context manager
         try:
             with self.conn:
-                self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?)',
-                                  (session.game.monitorid, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
+                self.conn.execute('INSERT INTO `sessions` (`MonitorID`, `AbsoluteProcess`, `Start`, `End`, `ComputerName`) VALUES (?, ?, ?, ?, ?)',
+                                (session.game.monitorid, session.absoluteProcess, session.start.timestamp(), session.end.timestamp(), socket.gethostname()))
         except sqlite3.IntegrityError:
             logging.error("Couldn't add session to database")
     #def changeGame(self, game): TODO

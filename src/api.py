@@ -21,4 +21,4 @@ class Api:
         totHours = totMinutes/60
         logging.info('This session of {} took {}h {}min {}sec'.format(session.game.name, round(hours),round(minutes%60),seconds%60))
         logging.info('You played {} {}h {}min {}sec in total'.format(session.game.name, round(totHours%24),round(totMinutes%60),totSeconds%60))
-        subprocess.Popen(self.config['RUN']['onquit'].format(name=session.game.name, id=session.game.monitorid, savePath=sg.path, saveInclude=sg.include, saveExclude=sg.exclude, h=round(hours%24),m=round(minutes%60),s=seconds%60, start=session.start.timestamp()), shell=True)
+        #subprocess.Popen(self.config['RUN']['onquit'].format(name=session.game.name, id=session.game.monitorid, savePath=sg.path, saveInclude=sg.include, saveExclude=sg.exclude, h=round(hours%24),m=round(minutes%60),s=seconds%60, start=session.start.timestamp()), shell=True)

@@ -52,18 +52,11 @@ class Database:
 
     def getGames(self, trackedGames):
         #TODO this does not work any longer, we use regex now
-        ambiguous = {}
         cur = self.conn.cursor()
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
-        for row in cur:
-            ambiguous[row["Process"]] = {'parameter':row["Parameter"], 'games':[]}
         cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath` FROM `monitorlist`')
         for row in cur:
             trackedGames[row["MonitorID"]] = games.Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"])
-            # mark games with ambiguous process names
-            if (row["Process"] in ambiguous) and (ambiguous[row["Process"]]['parameter'] == row["Parameter"]):
-                trackedGames[row["MonitorID"]].lookalikes = ambiguous[row["Process"]]['games']
-                ambiguous[row["Process"]]['games'].append(trackedGames[row["MonitorID"]])
         cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`')
         for row in cur:
             trackedGames[row["MonitorID"]].addSession(games.Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])))

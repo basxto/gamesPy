@@ -4,10 +4,12 @@ import datetime
 import re
 
 class Session:
-    def __init__(self, game, start, end):
+    def __init__(self, game, start, end, ambiguous=False, matches=[]):
         self.game = game
         self.start = start
         self.end = end
+        self.ambugious = ambugious
+        self.matches = matches
     # returns a time delta
     def getDuration(self):
         return self.end - self.start
@@ -26,7 +28,6 @@ class Game:
         self.processPath = processPath
         self.monitorid = monitorid
         self.sessions = []
-        self.lookalikes = []
         self.saveGame = SaveGame()
     def isProcess(self, pinfo):
         # check process name
@@ -36,14 +37,7 @@ class Game:
         if( not (pinfo['name'] and name.search(pinfo['name']) )
         and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
             return False
-        #TODO: thanks to regex we can't rely on .lookalikes any longer
-        # a daemon can't ask the user which game this is
-        # a client would have to clarify this
-        if self.lookalikes and (self.processPath != pinfo['cwd']):
-            logging.warning('Process name is ambiguous.')
-            logging.warning('There is no process path stored to distinguish these games.')
-            return False
-        # No argument is always contained
+        # "No argument" is always contained
         if not self.argument:#!!!
             return True
         # compare argument with every cmdline argument

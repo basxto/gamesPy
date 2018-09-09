@@ -1,0 +1,14 @@
+# if games.py got cloned to ~/gamesPy
+# ln -s ~/gamesPy/gamesPy.service ~/.config/systemd/user/
+# starting Xorg applications should work by default
+
+[Unit]
+Description=Track your game playtime
+AssertPathExists=%h/gamesPy
+
+[Service]
+WorkingDirectory=%h/gamesPy/
+ExecStart=/usr/bin/python3 %h/gamesPy/src/main.py --update yes 
+
+[Install]
+WantedBy=default.target

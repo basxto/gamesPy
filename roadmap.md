@@ -21,12 +21,12 @@
 * ~~[ ] Also store there the last time a game got played~~ This option never existed
 
 ## 0.5
-* [ ] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
-* [ ] Detect duplicate game entries
-* [ ] Distinguish duplicate game entries by full path and user choice
-* [ ] Allow to run command when game start got detected
-* [ ] Allow to run command when game got closed
-* [ ] Example systemd service file
+* [x] Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
+* [x] Detect ~~duplicate~~ ambiguous game entries with RegEx support
+* [x] Distinguish ~~duplicate~~ ambiguous game entries by full path ~~and user choice~~
+* [x] Allow to run command when game start got detected
+* [x] Allow to run command when game got closed
+* [x] Example systemd service file
 
 ## 0.6
 * [ ] Allow clients to request informations
@@ -38,6 +38,7 @@
 * [ ] Implement primitive cli client
 
 ## 0.7
+* [ ] Export games as XML
 * [ ] Improve communicability of games (at example FTL: Faster Than Light)
   * [ ] Steam ID (212680)
   * [ ] Amazon ID (B00D7GNPO2)

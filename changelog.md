@@ -1,3 +1,10 @@
+## 0.5
+* Accept XML format of GBM 1.1.4
+* Allow to run commands when game got started or closed
+* Offer systemd service file
+* Download and import [Game Backup Monitor](https://github.com/MikeMaximus/gbm) XML file
+* Distinguish ambiguous game entries by full path
+* Store ambiguous sessions for later clarification
 ## 0.4
 * Store and get sessions from database
 * Store played time in hours in database

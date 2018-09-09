@@ -43,21 +43,26 @@ class Game:
         else:
             return (process and process.endswith(self.process))
 
-    def isProcess(self, pinfo):
+    # 0: no; 1: yes; 2: perfect fit
+    def isProcess(self, pinfo, processPath):
         # check process name
-        # TODO: work with  explicit binary extensions
         if (not self.processCompare(pinfo['name'])
                 and not self.processCompare(pinfo['exe'])):
-            return False
-        # "No argument" is always contained
-        if not self.argument:  # !!!
-            return True
-        # compare argument with every cmdline argument
-        argument = re.compile(self.argument)
-        if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
-            return True
-        else:
-            return False
+            return 0
+        # "only check if argument exists
+        if self.argument != '':
+            # compare argument with every cmdline argument
+            argument = re.compile(self.argument)
+            if [arg for arg in pinfo['cmdline'] if argument.search(arg)]:
+                pass
+            else:
+                return 0
+
+        # only check if process path exists
+        # otherwise fall back to multi 
+        if (self.processPath != '' and self.processPath == processPath):
+            return 2
+        return 1
 
     def addSession(self, session):
         self.sessions.append(session)

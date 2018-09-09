@@ -71,5 +71,6 @@ def scanProcesses(trackedGames, config, api):
                 for pa in found:
                     logging.debug('game {} ({}) matches for process {} (PID {}; CWD {})'.format(pa.game.name, pa.game.process, pa.exe, pa.pid, pa.cwd))
                 return []
+    if len(found) > 0:
         api.onStart(found[0].game, found[0].started, found[0].pid)
     return found

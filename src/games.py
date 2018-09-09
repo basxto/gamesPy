@@ -8,7 +8,7 @@ class Session:
         self.game = game
         self.start = start
         self.end = end
-        self.ambugious = ambugious
+        self.ambiguous = ambiguous
         self.matches = matches
     # returns a time delta
     def getDuration(self):
@@ -21,21 +21,29 @@ class SaveGame:
         self.exclude = ''
 
 class Game:
-    def __init__(self, name, process, argument='', processPath='', monitorid='unknown'):
+    def __init__(self, name, process, argument='', processPath='', monitorid='unknown', isRegex=False):
         self.name = name
         self.process = process
+        #process is regex format
+        self.isRegex = isRegex
         self.argument = argument
         self.processPath = processPath
         self.monitorid = monitorid
         self.sessions = []
         self.saveGame = SaveGame()
+
+    def processCompare(self, process):
+        if self.isRegex:
+            regex = re.compile(self.process + '$')
+            return (process and regex.search(process))
+        else:
+            return (process and process.endswith(self.process))
+
     def isProcess(self, pinfo):
         # check process name
         #TODO: work with  explicit binary extensions
-        binaryExtension = '(\\.(exe|run|elf|bin))?(\\.(x86(_64)?|(amd|x)64))?'
-        name = re.compile(self.process + binaryExtension + '$')
-        if( not (pinfo['name'] and name.search(pinfo['name']) )
-        and not (pinfo['exe' ] and name.search(pinfo['exe' ]) )):
+        if (not self.processCompare(pinfo['name'])
+        and not self.processCompare(pinfo['exe'])):
             return False
         # "No argument" is always contained
         if not self.argument:#!!!
@@ -46,8 +54,10 @@ class Game:
             return True
         else:
             return False
+
     def addSession(self, session):
         self.sessions.append(session)
+
     # Returns time delta
     def getPlaytime(self):
         timeAccu = datetime.timedelta()

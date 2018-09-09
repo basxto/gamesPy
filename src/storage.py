@@ -54,9 +54,9 @@ class Database:
         #TODO this does not work any longer, we use regex now
         cur = self.conn.cursor()
         cur.execute('SELECT `Process`, `Parameter`, COUNT(*) AS Occurrences FROM `monitorlist` GROUP BY `Process`, `Parameter` HAVING ( COUNT(*) > 1)')
-        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath` FROM `monitorlist`')
+        cur.execute('SELECT `MonitorID`, `Name`, `Process`, `Parameter`, `ProcessPath`, `IsRegex` FROM `monitorlist`')
         for row in cur:
-            trackedGames[row["MonitorID"]] = games.Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"])
+            trackedGames[row["MonitorID"]] = games.Game(row["Name"], row["Process"], row["Parameter"], row["ProcessPath"], row["MonitorID"], row["IsRegex"])
         cur.execute('SELECT `MonitorID`, `Start`, `End` FROM `sessions`')
         for row in cur:
             trackedGames[row["MonitorID"]].addSession(games.Session(trackedGames[row["MonitorID"]], datetime.datetime.fromtimestamp(row["Start"]), datetime.datetime.fromtimestamp(row["End"])))

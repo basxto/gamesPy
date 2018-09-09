@@ -14,7 +14,7 @@ import games
 class Database:
     def __init__(self, path, dryRun=False):
         self.dryRun = dryRun
-        self.appVer = 112
+        self.appVer = 114
         self.conn = sqlite3.connect(path)
         self.conn.row_factory = sqlite3.Row
         self.createDatabase()
@@ -63,9 +63,12 @@ class Database:
         cur.execute('SELECT `MonitorID`, `AbsoluteProcess`, `Start`, `End` FROM `sessions`')
         # get sessions
         for row in cur:
-            game = trackedGames[row["MonitorID"]]
-            game.addSession(games.Session(game, datetime.datetime.fromtimestamp(
-                row["Start"]), datetime.datetime.fromtimestamp(row["End"]), row["AbsoluteProcess"], ))
+            if row["MonitorID"] in trackedGames:
+                game = trackedGames[row["MonitorID"]]
+                game.addSession(games.Session(game, datetime.datetime.fromtimestamp(
+                    row["Start"]), datetime.datetime.fromtimestamp(row["End"]), row["AbsoluteProcess"], ))
+            else:
+                logging.error("Game {} does not exist but has sessions".format(row["MonitorID"]))
         cur.close()
 
     def addSession(self, session):
